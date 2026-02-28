@@ -81,12 +81,35 @@ def dashboard(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     payload = get_dashboard_data(snapshot_date=snapshot_date, db=db)
+    now_utc = datetime.now(pytz.utc)
+    latest_cutoff = now_utc - timedelta(hours=6)
+
+    latest_story_ids: set[int] = set()
+    for story in payload.top_stories:
+        published = story.published_at
+        if published.tzinfo is None:
+            published = published.replace(tzinfo=pytz.utc)
+        else:
+            published = published.astimezone(pytz.utc)
+        if published >= latest_cutoff:
+            latest_story_ids.add(story.id)
+
+    for stories in payload.sectors.values():
+        for story in stories:
+            published = story.published_at
+            if published.tzinfo is None:
+                published = published.replace(tzinfo=pytz.utc)
+            else:
+                published = published.astimezone(pytz.utc)
+            if published >= latest_cutoff:
+                latest_story_ids.add(story.id)
+
     return templates.TemplateResponse(
         "index.html",
         {
             "request": request,
             "snapshot_date": payload.snapshot_date.isoformat(),
-            "now_utc": datetime.now(pytz.utc),
+            "latest_story_ids": latest_story_ids,
             "top_stories": payload.top_stories,
             "sectors": payload.sectors,
             "configured_sectors": list(payload.sectors.keys()),

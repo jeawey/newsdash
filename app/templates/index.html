@@ -63,7 +63,7 @@
           <article class="story-card highlight top-card" data-sector="{{ story.sector }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
             <p class="chip-row">
               <span class="chip">{{ story.sector }} · {{ story.subtopic }}</span>
-              {% if ((now_utc - story.published_at).total_seconds() / 3600) <= 6 %}
+              {% if story.id in latest_story_ids %}
               <span class="latest-tag">LIVE</span>
               {% endif %}
             </p>
@@ -98,7 +98,7 @@
           <article class="story-card">
             <p class="chip-row">
               <span class="chip">{{ story.subtopic }}</span>
-              {% if ((now_utc - story.published_at).total_seconds() / 3600) <= 6 %}
+              {% if story.id in latest_story_ids %}
               <span class="latest-tag">LIVE</span>
               {% endif %}
             </p>
