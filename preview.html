@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MorgenRadar | Vorschau</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./app/static/styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb orb-a" aria-hidden="true"></div>
+    <div class="bg-orb orb-b" aria-hidden="true"></div>
+
+    <header class="hero glass-panel">
+      <div class="hero-left">
+        <img src="./app/static/logo.svg" alt="Constructive Microbes Logo" class="logo" />
+        <div>
+          <p class="eyebrow">Interner Morgen-Brief</p>
+          <h1>MorgenRadar: Sektor-Intelligenz</h1>
+          <p class="subtitle">Stichtag: 27.02.2026</p>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="stat-pill">
+          <span class="stat-label">Top-Storys</span>
+          <span class="stat-value">10</span>
+        </div>
+        <div class="stat-pill">
+          <span class="stat-label">Sektoren</span>
+          <span class="stat-value">6</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="panel glass-panel" style="--sector-accent: #63c6ff">
+        <div class="panel-head">
+          <h2>Wichtigste Storys heute</h2>
+          <p>Priorisiert nach Relevanz, Dynamik und Aktualität</p>
+        </div>
+        <div class="story-grid top-grid">
+          <article class="story-card highlight" style="--sector-accent: #63c6ff">
+            <p class="chip">AI · Model Releases</p>
+            <h3><a href="#">Neues multimodales Modell veröffentlicht</a></h3>
+            <p class="summary">Starke Performance bei Reasoning-Tasks, Fokus auf Enterprise-Integrationen.</p>
+            <p class="meta">Beispielquelle · Relevanz 8.91</p>
+          </article>
+          <article class="story-card highlight" style="--sector-accent: #8d92ff">
+            <p class="chip">Crypto · Regulation</p>
+            <h3><a href="#">Regulatorisches Update mit Marktauswirkung</a></h3>
+            <p class="summary">Neue Leitlinien betreffen Stablecoin-Emittenten und Börsenbetrieb.</p>
+            <p class="meta">Beispielquelle · Relevanz 8.26</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel glass-panel" style="--sector-accent: #ffb26f">
+        <div class="panel-head">
+          <h2>Kenya</h2>
+          <p>4 Einträge im Tagesfenster</p>
+        </div>
+        <div class="story-grid">
+          <article class="story-card">
+            <p class="chip">Innovation</p>
+            <h3><a href="#">Fintech-Kooperation in Nairobi ausgeweitet</a></h3>
+            <p class="summary">Partnerschaft adressiert Zahlungen im KMU-Segment mit neuer API-Infrastruktur.</p>
+            <p class="meta">Beispielquelle · 27.02.2026 07:10 · Heat 7.41</p>
+          </article>
+          <article class="story-card">
+            <p class="chip">Economy</p>
+            <h3><a href="#">Makroindikatoren zeigen gemischtes Bild</a></h3>
+            <p class="summary">Inflationsdruck sinkt leicht, Investitionsaktivität bleibt robust.</p>
+            <p class="meta">Beispielquelle · 27.02.2026 06:35 · Heat 6.92</p>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,66 @@
+sectors:
+  Biotechnology:
+    - name: "Drug Discovery"
+      query: "biotechnology drug discovery clinical trials"
+    - name: "Gene Editing"
+      query: "CRISPR gene editing biotech"
+    - name: "Bio Manufacturing"
+      query: "biomanufacturing synthetic biology"
+
+  AI:
+    - name: "Model Releases"
+      query: "new AI model release foundation model"
+    - name: "Enterprise AI"
+      query: "enterprise AI adoption updates"
+    - name: "AI Regulation"
+      query: "AI regulation policy latest"
+
+  Crypto:
+    - name: "Markets"
+      query: "crypto market regulation exchange updates"
+    - name: "Infrastructure"
+      query: "blockchain infrastructure protocol updates"
+    - name: "Stablecoins & CBDC"
+      query: "stablecoin CBDC policy developments"
+
+  Sustainability:
+    - name: "Climate Policy"
+      query: "climate policy sustainability regulation"
+    - name: "Energy Transition"
+      query: "renewables grid storage transition news"
+    - name: "Corporate ESG"
+      query: "sustainability ESG corporate initiatives"
+
+  Cannabis:
+    - name: "Regulation"
+      query: "cannabis regulation legalization updates"
+    - name: "Medical Cannabis"
+      query: "medical cannabis clinical research"
+    - name: "Industry"
+      query: "cannabis market company developments"
+
+  Kenya:
+    - name: "Politics"
+      query: "Kenya politics policy latest"
+    - name: "Economy"
+      query: "Kenya economy business markets"
+    - name: "Innovation"
+      query: "Kenya technology startup ecosystem"
+
+trusted_domains:
+  reuters.com: 2.5
+  bloomberg.com: 2.3
+  ft.com: 2.2
+  wsj.com: 2.2
+  apnews.com: 2.2
+  economist.com: 2.1
+  nature.com: 2.1
+  bbc.com: 1.9
+  cnbc.com: 1.8
+  coindesk.com: 1.8
+
+excluded_domains:
+  - "youtube.com"
+  - "tiktok.com"
+  - "facebook.com"
+  - "instagram.com"
