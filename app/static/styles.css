@@ -201,6 +201,39 @@ main {
   font-size: 0.83rem;
 }
 
+.topic-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.topic-btn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 0.42rem 0.8rem;
+  font-family: "Manrope", sans-serif;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 160ms ease;
+}
+
+.topic-btn:hover {
+  border-color: var(--accent);
+  background: rgba(103, 232, 249, 0.12);
+}
+
+.topic-btn.is-active {
+  border-color: var(--accent);
+  background: rgba(103, 232, 249, 0.2);
+  color: #e9fcff;
+}
+
+.is-hidden {
+  display: none;
+}
+
 .story-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

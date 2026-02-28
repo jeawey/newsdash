@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import pytz
@@ -16,7 +16,7 @@ from app.presentation import SECTOR_COLORS
 from app.schemas import DashboardResponse, StoryOut
 from app.settings import get_settings
 
-app = FastAPI(title="Internal News Dashboard")
+app = FastAPI(title="Constructive News")
 templates = Jinja2Templates(directory="app/templates")
 settings = get_settings()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -46,7 +46,10 @@ def get_dashboard_data(
 
     stories = db.scalars(
         select(Story)
-        .where(Story.snapshot_date == target_date)
+        .where(
+            Story.snapshot_date == target_date,
+            Story.published_at >= datetime.now(pytz.utc) - timedelta(hours=settings.max_story_age_hours),
+        )
         .order_by(desc(Story.score))
     ).all()
 

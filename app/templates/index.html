@@ -4,7 +4,7 @@
     {% set assets = asset_prefix|default('/static') %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MorgenRadar | Sektor-Dashboard</title>
+    <title>Constructive News</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -21,9 +21,9 @@
       <div class="hero-left">
         <img src="{{ assets }}/logo.svg" alt="Constructive Microbes Logo" class="logo" />
         <div>
-          <p class="eyebrow">Interner Morgen-Brief</p>
-          <h1>MorgenRadar: Sektor-Intelligenz</h1>
-          <p class="subtitle">Stichtag: {{ snapshot_date }}</p>
+          <p class="eyebrow">Global Briefing</p>
+          <h1>Constructive News</h1>
+          <p class="subtitle">Stichtag: {{ snapshot_date }} · Nur aktuelle Meldungen</p>
         </div>
       </div>
       <div class="hero-right">
@@ -39,23 +39,40 @@
     </header>
 
     <main>
-      <section class="panel glass-panel">
+      <section class="topic-nav panel glass-panel">
         <div class="panel-head">
-          <h2>Wichtigste Storys heute</h2>
+          <h2>Themenauswahl</h2>
+          <p>Wähle einen Bereich statt alles auf einer Seite</p>
+        </div>
+        <div class="topic-buttons">
+          <button class="topic-btn is-active" data-topic="all" type="button">Alle</button>
+          {% for sector in sectors.keys() %}
+          <button class="topic-btn" data-topic="{{ sector }}" type="button">{{ sector }}</button>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="panel glass-panel filter-section top-section" data-sector="top">
+        <div class="panel-head">
+          <h2>Wichtigste Storys</h2>
           <p>Priorisiert nach Relevanz, Dynamik und Aktualität</p>
         </div>
         <div class="story-grid top-grid">
           {% if top_stories %}
           {% for story in top_stories %}
-          <article class="story-card highlight" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
+          <article class="story-card highlight top-card" data-sector="{{ story.sector }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
             <p class="chip">{{ story.sector }} · {{ story.subtopic }}</p>
             <h3><a href="{{ story.url }}" target="_blank" rel="noopener">{{ story.title }}</a></h3>
             <p class="summary">{{ story.summary }}</p>
             <p class="meta">{{ story.source_name }} · Relevanz {{ '%.2f'|format(story.score) }}</p>
           </article>
           {% endfor %}
+          <article class="story-card top-filter-empty is-hidden">
+            <h3>Für dieses Thema keine Top-Storys</h3>
+            <p class="summary">Bitte anderes Thema wählen oder auf den nächsten Lauf warten.</p>
+          </article>
           {% else %}
-          <article class="story-card">
+          <article class="story-card top-filter-empty">
             <h3>Derzeit keine Top-Storys verfügbar</h3>
             <p class="summary">Beim nächsten Lauf werden neue Nachrichten angezeigt.</p>
           </article>
@@ -64,7 +81,7 @@
       </section>
 
       {% for sector, stories in sectors.items() %}
-      <section class="panel glass-panel" style="--sector-accent: {{ sector_colors.get(sector, '#5eead4') }}">
+      <section class="panel glass-panel filter-section sector-panel" data-sector="{{ sector }}" style="--sector-accent: {{ sector_colors.get(sector, '#5eead4') }}">
         <div class="panel-head">
           <h2>{{ sector }}</h2>
           <p>{{ stories | length }} Einträge im Tagesfenster</p>
@@ -96,5 +113,39 @@
       </section>
       {% endfor %}
     </main>
+
+    <script>
+      const topicButtons = Array.from(document.querySelectorAll(".topic-btn"));
+      const topCards = Array.from(document.querySelectorAll(".top-card"));
+      const topEmpty = document.querySelector(".top-filter-empty");
+      const sectorPanels = Array.from(document.querySelectorAll(".sector-panel"));
+
+      function applyTopicFilter(topic) {
+        topicButtons.forEach((button) => {
+          button.classList.toggle("is-active", button.dataset.topic === topic);
+        });
+
+        let visibleTopCards = 0;
+        topCards.forEach((card) => {
+          const visible = topic === "all" || card.dataset.sector === topic;
+          card.classList.toggle("is-hidden", !visible);
+          if (visible) visibleTopCards += 1;
+        });
+
+        if (topEmpty) {
+          const showTopEmpty = topCards.length > 0 && visibleTopCards === 0;
+          topEmpty.classList.toggle("is-hidden", !showTopEmpty);
+        }
+
+        sectorPanels.forEach((panel) => {
+          const visible = topic === "all" || panel.dataset.sector === topic;
+          panel.classList.toggle("is-hidden", !visible);
+        });
+      }
+
+      topicButtons.forEach((button) => {
+        button.addEventListener("click", () => applyTopicFilter(button.dataset.topic));
+      });
+    </script>
   </body>
 </html>

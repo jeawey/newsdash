@@ -1,7 +1,8 @@
 import math
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+from app.settings import get_settings
 from worker.types import RawStory, ScoredStory
 from worker.utils import fingerprint_title
 
@@ -20,16 +21,21 @@ def _keyword_boost(sector: str, title: str) -> float:
         "Sustainability": ["emissions", "renewable", "storage", "decarbonization"],
         "Cannabis": ["legalization", "medical", "regulation", "licensing"],
         "Kenya": ["parliament", "policy", "election", "startup", "cbk"],
+        "Politics": ["sanctions", "ceasefire", "summit", "treaty", "election", "cabinet"],
     }
     sector_terms = keywords.get(sector, [])
     return min(sum(0.2 for k in sector_terms if k in t), 1.0)
 
 
 def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]) -> list[ScoredStory]:
+    settings = get_settings()
     now = datetime.now(timezone.utc)
+    freshness_cutoff = now - timedelta(hours=settings.max_story_age_hours)
 
     grouped: dict[tuple[str, str], list[RawStory]] = defaultdict(list)
     for story in raw_stories:
+        if story.published_at < freshness_cutoff:
+            continue
         fp = fingerprint_title(story.title)
         grouped[(story.sector, fp)].append(story)
 

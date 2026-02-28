@@ -47,6 +47,14 @@ sectors:
     - name: "Innovation"
       query: "Kenya technology startup ecosystem"
 
+  Politics:
+    - name: "Geopolitical Conflicts"
+      query: "Iran USA Israel latest political decisions diplomacy sanctions ceasefire"
+    - name: "Global Policy Decisions"
+      query: "major government policy decision global politics latest"
+    - name: "International Institutions"
+      query: "United Nations G7 EU NATO political decisions latest"
+
 trusted_domains:
   reuters.com: 2.5
   bloomberg.com: 2.3
