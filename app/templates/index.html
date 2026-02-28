@@ -46,7 +46,7 @@
         </div>
         <div class="topic-buttons">
           <button class="topic-btn is-active" data-topic="all" type="button">Alle</button>
-          {% for sector in sectors.keys() %}
+          {% for sector in configured_sectors %}
           <button class="topic-btn" data-topic="{{ sector }}" type="button">{{ sector }}</button>
           {% endfor %}
         </div>
@@ -61,7 +61,12 @@
           {% if top_stories %}
           {% for story in top_stories %}
           <article class="story-card highlight top-card" data-sector="{{ story.sector }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
-            <p class="chip">{{ story.sector }} · {{ story.subtopic }}</p>
+            <p class="chip-row">
+              <span class="chip">{{ story.sector }} · {{ story.subtopic }}</span>
+              {% if ((now_utc - story.published_at).total_seconds() / 3600) <= 6 %}
+              <span class="latest-tag">LIVE</span>
+              {% endif %}
+            </p>
             <h3><a href="{{ story.url }}" target="_blank" rel="noopener">{{ story.title }}</a></h3>
             <p class="summary">{{ story.summary }}</p>
             <p class="meta">{{ story.source_name }} · Relevanz {{ '%.2f'|format(story.score) }}</p>
@@ -80,7 +85,8 @@
         </div>
       </section>
 
-      {% for sector, stories in sectors.items() %}
+      {% for sector in configured_sectors %}
+      {% set stories = sectors.get(sector, []) %}
       <section class="panel glass-panel filter-section sector-panel" data-sector="{{ sector }}" style="--sector-accent: {{ sector_colors.get(sector, '#5eead4') }}">
         <div class="panel-head">
           <h2>{{ sector }}</h2>
@@ -90,7 +96,12 @@
           {% if stories %}
           {% for story in stories %}
           <article class="story-card">
-            <p class="chip">{{ story.subtopic }}</p>
+            <p class="chip-row">
+              <span class="chip">{{ story.subtopic }}</span>
+              {% if ((now_utc - story.published_at).total_seconds() / 3600) <= 6 %}
+              <span class="latest-tag">LIVE</span>
+              {% endif %}
+            </p>
             <h3><a href="{{ story.url }}" target="_blank" rel="noopener">{{ story.title }}</a></h3>
             <p class="summary">{{ story.summary }}</p>
             <p class="meta">{{ story.source_name }} · {{ story.published_at.strftime('%d.%m.%Y %H:%M') }} · Heat {{ '%.2f'|format(story.heat_score) }}</p>
@@ -146,6 +157,7 @@
       topicButtons.forEach((button) => {
         button.addEventListener("click", () => applyTopicFilter(button.dataset.topic));
       });
+      applyTopicFilter("all");
     </script>
   </body>
 </html>

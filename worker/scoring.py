@@ -15,13 +15,13 @@ def _recency_score(published_at: datetime, now: datetime) -> float:
 def _keyword_boost(sector: str, title: str) -> float:
     t = title.lower()
     keywords = {
-        "AI": ["launch", "release", "model", "open source", "regulation"],
-        "Crypto": ["etf", "hack", "approval", "regulation", "stablecoin"],
-        "Biotechnology": ["clinical", "trial", "fda", "phase", "crispr"],
-        "Sustainability": ["emissions", "renewable", "storage", "decarbonization"],
-        "Cannabis": ["legalization", "medical", "regulation", "licensing"],
-        "Kenya": ["parliament", "policy", "election", "startup", "cbk"],
-        "Politics": ["sanctions", "ceasefire", "summit", "treaty", "election", "cabinet"],
+        "AI": ["openai", "anthropic", "claude", "perplexity", "model", "ceo", "hiring", "launch"],
+        "Crypto": ["crash", "liquidation", "altcoin", "etf", "tariff", "regulation", "bitcoin"],
+        "Biotechnology": ["microorganism", "biotech", "device", "invention", "clinical", "startup"],
+        "Sustainability": ["regulation", "climate", "startup", "catastrophe", "renewable", "compliance"],
+        "Cannabis": ["legalization", "hempcrete", "hempwood", "social club", "germany", "spain"],
+        "Kenya": ["parliament", "agriculture", "mount kenya", "startup", "policy", "nairobi"],
+        "Politics": ["sanctions", "ceasefire", "summit", "tariff", "election", "war", "negotiation"],
     }
     sector_terms = keywords.get(sector, [])
     return min(sum(0.2 for k in sector_terms if k in t), 1.0)

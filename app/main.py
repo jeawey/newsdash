@@ -15,11 +15,21 @@ from app.database import engine
 from app.presentation import SECTOR_COLORS
 from app.schemas import DashboardResponse, StoryOut
 from app.settings import get_settings
+from worker.config import load_source_config
 
 app = FastAPI(title="Constructive News")
 templates = Jinja2Templates(directory="app/templates")
 settings = get_settings()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+def _configured_sectors() -> list[str]:
+    config = load_source_config()
+    ordered: list[str] = []
+    for query in config.queries:
+        if query.sector not in ordered:
+            ordered.append(query.sector)
+    return ordered
 
 
 @app.on_event("startup")
@@ -57,6 +67,9 @@ def get_dashboard_data(
     for story in stories:
         sectors.setdefault(story.sector, []).append(StoryOut.model_validate(story))
 
+    for sector in _configured_sectors():
+        sectors.setdefault(sector, [])
+
     top_stories = [StoryOut.model_validate(s) for s in stories[:10]]
     return DashboardResponse(snapshot_date=target_date, sectors=sectors, top_stories=top_stories)
 
@@ -73,8 +86,10 @@ def dashboard(
         {
             "request": request,
             "snapshot_date": payload.snapshot_date.isoformat(),
+            "now_utc": datetime.now(pytz.utc),
             "top_stories": payload.top_stories,
             "sectors": payload.sectors,
+            "configured_sectors": list(payload.sectors.keys()),
             "sector_colors": SECTOR_COLORS,
             "asset_prefix": "/static",
         },
