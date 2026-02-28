@@ -2,10 +2,6 @@ services:
   web:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-    env_file:
-      - .env
-    volumes:
-      - ./:/app
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -13,8 +9,4 @@ services:
   worker:
     build: .
     command: python scripts/start_scheduler.py
-    env_file:
-      - .env
-    volumes:
-      - ./:/app
     restart: unless-stopped
