@@ -2,11 +2,22 @@ services:
   web:
     build: .
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    environment:
+      DATABASE_URL: sqlite:////data/news_dashboard.sqlite3
     ports:
       - "80:8000"
+    volumes:
+      - newsdash_data:/data
     restart: unless-stopped
 
   worker:
     build: .
     command: python scripts/start_scheduler.py
+    environment:
+      DATABASE_URL: sqlite:////data/news_dashboard.sqlite3
+    volumes:
+      - newsdash_data:/data
     restart: unless-stopped
+
+volumes:
+  newsdash_data:
