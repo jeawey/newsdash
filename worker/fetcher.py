@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
+import hashlib
 import logging
 import re
 import time
@@ -15,7 +16,7 @@ from dateutil import parser as date_parser
 from app.settings import get_settings
 from worker.config import DirectFeedConfig, QueryConfig, SourceConfig, iter_direct_feeds, iter_queries
 from worker.types import RawStory
-from worker.utils import build_summary, extract_domain, google_news_rss_url
+from worker.utils import build_summary, canonicalize_url, extract_domain, google_news_rss_url
 
 _RSS_VERZEICHNIS_HOST = "www.rss-verzeichnis.de"
 _RSS_HINT_RE = re.compile(r"RSS-Feed-URL.*?href=[\"']([^\"']+)[\"']", re.IGNORECASE | re.DOTALL)
@@ -62,6 +63,237 @@ _DIRECT_SECTOR_MIN_FLOORS: dict[str, int] = {
 
 _DIRECT_SECTOR_MAX_SHARE: dict[str, float] = {
     "Politics": 0.45,
+}
+
+_SECTOR_QUERY_EXPANSIONS: dict[str, tuple[str, ...]] = {
+    "AI": (
+        "model release frontier model open weights benchmark eval",
+        "chief scientist appointed resigns joins head of research",
+        "ai act enforcement executive order export controls",
+        "ai funding acquisition merger datacenter gpu compute water cooling",
+    ),
+    "Crypto": (
+        "altcoin rally crash plunge liquidations volatility",
+        "hack exploit rug pull insider trading market manipulation wash trading",
+        "sec doj enforcement lawsuit stablecoin etf regulation",
+        "exchange outage custody proof of reserves infrastructure",
+    ),
+    "Sustainability": (
+        "water reuse wastewater sludge water scarcity drought",
+        "csrd esg disclosure scope 3 supply chain compliance",
+        "circular economy recycling organic waste compost anaerobic digestion",
+        "pfas non-toxic chemical ban climate adaptation resilience infrastructure",
+        "public tender rfp eoi ppp grant funding pilot rollout framework contract",
+    ),
+    "Biotechnologie": (
+        "fermentation biomanufacturing industrial biotech microbial consortium enzymes",
+        "biofilm wastewater microbiology odor management biosurfactant surfactin",
+        "biostimulant inoculant soil microbiome nutrient efficiency",
+        "pilot plant scale-up manufacturing regulatory approval distribution deal qa qc",
+    ),
+    "Cannabis": (
+        "legalization licensing medical cannabis framework law enforcement",
+        "gmp gacp testing contamination quality lab certification",
+        "hemp hempcrete hempwood textiles packaging soil applications",
+        "social club tourism raids licensing changes acquisitions taxation",
+    ),
+    "Frequenzen": (
+        "spectrum auctions 5g 6g regulator decision allocation",
+        "rf hardware antenna mmwave satellite interference jamming radar",
+        "solfeggio sound healing trend watch wellness signal",
+    ),
+    "Hamburg": (
+        "hamburg senat buergerschaft gesetz verordnung beschluss",
+        "hamburg ausschreibung vergabe rahmenvertrag tender rfp leistungsverzeichnis",
+        "hamburg hotel hospitality housekeeping kueche abfluss fettabscheider",
+        "hamburg quartier hafencity klimaresilienz regenwassermanagement schwammstadt",
+        "hamburg hafen streik ausfall stoerung ueberschwemmung logistik",
+    ),
+    "Mallorca": (
+        "mallorca consell ajuntament decreto normativa inspeccion sancion",
+        "mallorca licitacion concurso adjudicacion pliego contrato marco tender",
+        "mallorca licencia vacacional alquiler turistico airbnb enforcement",
+        "mallorca hotel apertura reforma operador lavanderia cocina facility management",
+        "mallorca sequia restriccion reutilizacion depuradora aguas residuales lodos",
+    ),
+    "Kenya": (
+        "kenya water wastewater sanitation non-revenue water leak detection metering",
+        "kenya procurement tender ifb rfp eoi donor-funded grant ppp",
+        "kenya agriculture soil health drought irrigation fertilizer subsidy cooperative",
+        "kenya ports marine oil spill grease trap industrial effluent",
+        "kenya hospitality facility management housekeeping kitchen laundry hygiene",
+    ),
+    "Politics": (
+        "war conflict sanctions ceasefire diplomacy military defense",
+        "trade policy export controls procurement subsidy infrastructure bill",
+        "water policy fertilizer policy supply chain disruption shipping lane",
+    ),
+}
+
+_SUBTOPIC_QUERY_EXPANSIONS: dict[str, tuple[str, ...]] = {
+    "Global Regulations": (
+        "regulation compliance directive standard enforcement",
+        "public procurement tender framework contract grant",
+    ),
+    "Innovations & Startups": (
+        "pilot rollout startup partnership funding deployment",
+        "water agri facility industrial innovation",
+    ),
+    "Disasters & Response": (
+        "drought flood blackout emergency response infrastructure",
+    ),
+    "ESG Finance & Disclosure": (
+        "csrd esg disclosure scope 3 auditability",
+    ),
+    "Energy Transition": (
+        "grid stability battery hydrogen renewable infrastructure",
+    ),
+    "Circular Economy": (
+        "recycling reuse compost anaerobic digestion waste-to-value",
+    ),
+    "Effective Microorganisms": (
+        "microbial consortium inoculant fermentation soil microbiome",
+    ),
+    "Biotech Devices": (
+        "biotech device diagnostics qa qc biomanufacturing",
+    ),
+    "Biotech Breakthroughs": (
+        "industrial biotech scale-up pilot plant distribution deal",
+    ),
+    "Biotech Funding & M&A": (
+        "acquisition merger funding partnership distribution",
+    ),
+    "Regulatory & Safety": (
+        "regulatory approval biosafety labeling compliance standards",
+    ),
+    "Legalization Tracker": (
+        "framework law licensing enforcement court ruling",
+    ),
+    "Industrial Hemp": (
+        "hempcrete hempwood textiles packaging industrial hemp",
+    ),
+    "Spain Germany Policy": (
+        "social club licensing raids inspection spain germany",
+    ),
+    "Medical Cannabis": (
+        "medical cannabis gmp gacp testing contamination",
+    ),
+    "Industry & Retail": (
+        "consolidation acquisitions taxation supply chain pricing",
+    ),
+    "HF Technology": (
+        "rf mmwave antenna wireless hardware deployment",
+    ),
+    "Spectrum Policy": (
+        "spectrum allocation auction regulator decision interference",
+    ),
+    "Resonance & Applications": (
+        "radar satellite jamming interference security applications",
+    ),
+    "Telecom Infrastructure": (
+        "5g 6g deployment infrastructure backhaul tower",
+    ),
+    "Defense & Space Spectrum": (
+        "defense spectrum satellite communications jamming",
+    ),
+    "Labs & Models": (
+        "model release frontier benchmark open weights eval",
+    ),
+    "Leadership Moves": (
+        "chief scientist appointed joins resigns head of research",
+    ),
+    "AI Product Launches": (
+        "launch rollout enterprise api copilot deployment",
+    ),
+    "Policy & Regulation": (
+        "ai act enforcement executive order export controls",
+    ),
+    "AI in Enterprise": (
+        "enterprise adoption procurement operations automation",
+    ),
+    "AI Chips & Infra": (
+        "datacenter gpu compute chip cooling water cooling",
+    ),
+    "Open Source & Research": (
+        "open source model weights benchmark evaluation research",
+    ),
+    "Lokale Politik & Gesetze": (
+        "senat buergerschaft verordnung beschluss gesetz urteil",
+        "decreto normativa aprobado sentencia inspeccion sancion",
+    ),
+    "Ausschreibungen & Vergaben": (
+        "ausschreibung vergabe rahmenvertrag leistungsverzeichnis tender rfp",
+        "licitacion concurso adjudicacion pliego contrato marco",
+    ),
+    "Hotels & Hospitality": (
+        "hotel opening renovation operator housekeeping kitchen drains",
+    ),
+    "Nachhaltigkeit & Quartiere": (
+        "quartier klimaresilienz schwammstadt regenwassermanagement kreislaufwirtschaft",
+    ),
+    "Events & Kultur": (
+        "fachmesse kongress wasser agrar nachhaltigkeit",
+    ),
+    "St. Pauli & Kiez": (
+        "st pauli kiez reperbahn tourism pressure regulation",
+    ),
+    "Schlagzeilen & Brennpunkte": (
+        "streik hafen ausfall stoerung ueberschwemmung evakuierung",
+    ),
+    "Wirtschaft & Stadtleben": (
+        "hafenwirtschaft logistik inflation housing tourism demand",
+    ),
+    "Immobilienrecht & Neubau": (
+        "urbanismo obra nueva licencia moratoria zoning permits",
+    ),
+    "Ferienlizenzen & Airbnb": (
+        "licencia vacacional alquiler turistico inspeccion sancion",
+    ),
+    "Hoteleroeffnungen & Hospitality": (
+        "apertura hotel reforma operador housekeeping lavanderia cocina",
+    ),
+    "Nachhaltigkeit & Inselprojekte": (
+        "sequia restriccion reutilizacion depuradora economia circular",
+    ),
+    "Events & Gesellschaft": (
+        "fachmesse congreso turismo sostenibilidad water",
+    ),
+    "Ostküste & Gemeinden": (
+        "cala millor sa coma manacor depuradora restricciones",
+    ),
+    "Wirtschaft & Tourismus": (
+        "ocupacion temporada turismo reservas costes huelga",
+    ),
+    "Politics": (
+        "kenya policy parliament county government regulation",
+    ),
+    "Agriculture & Mount Kenya": (
+        "soil health irrigation drought fertilizer subsidy cooperative",
+    ),
+    "Startup Ecosystem": (
+        "agritech watertech cleantech funding partnership expansion",
+    ),
+    "Infrastructure & Public Projects": (
+        "wwtp upgrade procurement ppp operator contract pilot",
+    ),
+    "Business & Markets": (
+        "distribution agreement import permit investment joint venture",
+    ),
+    "Geopolitical Conflicts": (
+        "war conflict ceasefire sanctions military operation",
+    ),
+    "Global Power Moves": (
+        "trade policy export controls diplomacy coalition",
+    ),
+    "Elections & Summits": (
+        "parliament vote coalition election summit policy",
+    ),
+    "Trade & Sanctions": (
+        "tariff sanctions export controls supply chain disruption",
+    ),
+    "Security & Defense": (
+        "defense doctrine naval operation missile security incident",
+    ),
 }
 
 _SECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -668,13 +900,44 @@ def _stories_from_query(query: QueryConfig, config: SourceConfig) -> list[RawSto
             return ("en", "KE")
         return ("en", "US")
 
+    def query_variants(q: QueryConfig) -> list[str]:
+        base = [q.query]
+        sector_expansions = list(_SECTOR_QUERY_EXPANSIONS.get(q.sector, ()))
+        subtopic_expansions = list(_SUBTOPIC_QUERY_EXPANSIONS.get(q.subtopic, ()))
+        combined = sector_expansions + subtopic_expansions
+        if not combined:
+            return base
+
+        # Add up to two deterministic expansions per configured query to broaden
+        # coverage while keeping runtime/load bounded.
+        digest = hashlib.sha1(f"{q.sector}:{q.subtopic}:{q.query}".encode("utf-8")).hexdigest()
+        first_idx = int(digest[:8], 16) % len(combined)
+        picks = [combined[first_idx]]
+        if len(combined) > 1:
+            second_idx = int(digest[8:16], 16) % len(combined)
+            if second_idx == first_idx:
+                second_idx = (second_idx + 1) % len(combined)
+            picks.append(combined[second_idx])
+        for extra in picks:
+            candidate = f"{q.query} {extra}".strip()
+            if candidate not in base:
+                base.append(candidate)
+        return base
+
     lang, region = locale_for_sector(query.sector)
-    feed_url = google_news_rss_url(query.query, lang=lang, region=region)
-    feed = _parse_feed_with_timeout(feed_url)
     stories: list[RawStory] = []
-    for entry in feed.entries[: settings.max_entries_per_feed]:
-        story = _to_story(query, entry, config.excluded_domains)
-        if story is not None:
+    seen_urls: set[str] = set()
+    for q_text in query_variants(query):
+        feed_url = google_news_rss_url(q_text, lang=lang, region=region)
+        feed = _parse_feed_with_timeout(feed_url)
+        for entry in feed.entries[: settings.max_entries_per_feed]:
+            story = _to_story(query, entry, config.excluded_domains)
+            if story is None:
+                continue
+            canonical = canonicalize_url(story.url)
+            if canonical in seen_urls:
+                continue
+            seen_urls.add(canonical)
             stories.append(story)
     return stories
 

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import fcntl
 import logging
 from pathlib import Path
+from collections import Counter
 import time
 
 import pytz
@@ -115,6 +116,8 @@ def run_pipeline(run_type: str) -> None:
             t2 = time.monotonic()
             inserted = persist_scored_stories(db, scored, run_type)
             t3 = time.monotonic()
+            scored_by_sector = dict(sorted(Counter(s.sector for s in scored).items()))
+            inserted_by_sector = dict(sorted(Counter(s.sector for s in inserted).items()))
             logger.warning(
                 "Run %s phase timings: fetch=%.1fs score=%.1fs store=%.1fs raw=%s scored=%s inserted=%s",
                 run_type,
@@ -125,6 +128,7 @@ def run_pipeline(run_type: str) -> None:
                 len(scored),
                 len(inserted),
             )
+            logger.warning("Run %s sector counts: scored=%s inserted=%s", run_type, scored_by_sector, inserted_by_sector)
 
             if run_type == "morning":
                 send_digest(inserted, title="Morning Sector Briefing")

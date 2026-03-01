@@ -113,6 +113,51 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `worker/fetcher.py` zurücknehmen.
 
+### 2026-03-01 20:16:53 Europe/Madrid | Worker (Sektor-Diagnostik in Run-Logs)
+- Änderung:
+  - Zusätzliche Sektor-Diagnostik im Pipeline-Run:
+    - `scored` pro Sektor
+    - `inserted` pro Sektor
+  - Logzeile ergänzt:
+    - `Run <type> sector counts: scored={...} inserted={...}`
+- Grund:
+  - Zur schnellen Ursachenanalyse bei Unterdeckung einzelner Sektoren (z. B. Sustainability/Biotechnologie/Cannabis) muss klar sein, ob das Defizit im Scoring oder in der Persistenz entsteht.
+- Erwarteter Effekt:
+  - Präzisere, schnellere Fehlerlokalisierung ohne manuelle DB-Forensik.
+- Rollback-Hinweis:
+  - Änderungen in `worker/jobs.py` zurücknehmen.
+
+### 2026-03-01 20:23:01 Europe/Madrid | Worker (Query-Expansion im Fetch für Zielsektoren)
+- Änderung:
+  - Fetcher erweitert um sektorabhängige Query-Expansion für unterversorgte Bereiche:
+    - `Sustainability`
+    - `Biotechnologie`
+    - `Cannabis`
+    - `Kenya`
+  - Pro konfigurierter Query wird zusätzlich eine deterministisch ausgewählte Expansion ausgeführt (stabile Last, keine unkontrollierte Explosion).
+  - Deduplizierung innerhalb des Query-Tasks über kanonische URL ergänzt, damit Doppel-Treffer aus Basis+Expansion nicht unnötig Budget verbrauchen.
+- Grund:
+  - Reines Ranking reicht nicht aus, wenn relevante Rohstories bereits beim Fetch nicht ausreichend hereinkommen.
+- Erwarteter Effekt:
+  - Größere thematische Recherche-Tiefe im Fetch und bessere Rohdatenabdeckung in den Zielsektoren vor dem Scoring.
+- Rollback-Hinweis:
+  - Änderungen in `worker/fetcher.py` zurücknehmen.
+
+### 2026-03-01 20:25:32 Europe/Madrid | Worker (Query-Expansion auf alle Sektoren + Subtopics)
+- Änderung:
+  - Query-Expansion im Fetch auf alle relevanten Bereiche ausgedehnt:
+    - globale Sektoren (`AI`, `Crypto`, `Sustainability`, `Biotechnologie`, `Cannabis`, `Frequenzen`, `Politics`, `Kenya`)
+    - lokale Räume und Themen (`Hamburg`, `Mallorca`, `Kenya`) inkl. Subtopic-spezifischer Erweiterungen.
+  - Neuer Subtopic-Expansion-Pool eingeführt (`_SUBTOPIC_QUERY_EXPANSIONS`), damit die Recherche direkt die thematische Taxonomie trifft.
+  - Variantenlogik pro Query erweitert auf:
+    - Basisquery + bis zu 2 deterministische Expansionen (sektor- und subtopic-basiert), dedupliziert.
+- Grund:
+  - Relevante Themen sollten nicht nur im Scoring höher gewichtet werden, sondern bereits im Fetch breiter und gezielter eingesammelt werden.
+- Erwarteter Effekt:
+  - Größere thematische Recherchebreite über alle Räume und Kategorien bei weiterhin kontrollierter Last.
+- Rollback-Hinweis:
+  - Änderungen in `worker/fetcher.py` zurücknehmen.
+
 ### 2026-03-01 14:22:00 Europe/Madrid | Web (UI/Theme)
 - Änderung:
   - Theme-Toggle von Text auf Sonne/Mond-Icon umgestellt (inkl. passender ARIA-Labels je Modus).
