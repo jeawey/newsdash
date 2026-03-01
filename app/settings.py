@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     telegram_chat_id: Optional[str] = Field(default=None, alias="TELEGRAM_CHAT_ID")
 
     hourly_breaking_threshold: float = Field(default=7.0, alias="HOURLY_BREAKING_THRESHOLD")
-    max_items_per_sector: int = Field(default=12, alias="MAX_ITEMS_PER_SECTOR")
-    max_items_per_domain_per_sector: int = Field(default=2, alias="MAX_ITEMS_PER_DOMAIN_PER_SECTOR")
+    max_items_per_sector: int = Field(default=20, alias="MAX_ITEMS_PER_SECTOR")
+    max_items_per_domain_per_sector: int = Field(default=3, alias="MAX_ITEMS_PER_DOMAIN_PER_SECTOR")
+    min_items_per_local_subtopic: int = Field(default=4, alias="MIN_ITEMS_PER_LOCAL_SUBTOPIC")
     max_story_age_hours: int = Field(default=72, alias="MAX_STORY_AGE_HOURS")
     run_ingestion_on_startup: bool = Field(default=True, alias="RUN_INGESTION_ON_STARTUP")
 

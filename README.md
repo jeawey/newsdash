@@ -70,6 +70,7 @@ Notes:
 - On worker startup, one ingestion run is executed immediately by default (`RUN_INGESTION_ON_STARTUP=true`).
 - Duplicate suppression uses canonical URL + strict and loose title fingerprints per sector/day.
 - Source diversity is enforced with `MAX_ITEMS_PER_DOMAIN_PER_SECTOR` (default `2`).
+- Local quota for `Hamburg` and `Mallorca` enforces at least `MIN_ITEMS_PER_LOCAL_SUBTOPIC` items per category (default `4`) when available.
 
 ## GitHub Pages deployment (public, free)
 

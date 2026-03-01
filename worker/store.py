@@ -42,6 +42,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     for story in stories:
         per_sector[story.sector].append(story)
 
+    local_quota_sectors = {"Hamburg", "Mallorca"}
     inserted: list[Story] = []
     for sector, sector_stories in per_sector.items():
         existing_rows = db.execute(
@@ -57,18 +58,32 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         for row in existing_rows:
             domain_counts[row.source_domain] += 1
 
-        for story in sorted(sector_stories, key=lambda s: s.score, reverse=True)[: settings.max_items_per_sector]:
+        sorted_sector_stories = sorted(sector_stories, key=lambda s: s.score, reverse=True)
+
+        sector_limit = settings.max_items_per_sector
+        if sector in local_quota_sectors:
+            subtopics = {story.subtopic for story in sorted_sector_stories}
+            sector_limit = max(sector_limit, len(subtopics) * settings.min_items_per_local_subtopic)
+
+        sector_inserted = 0
+
+        def _can_insert(story: ScoredStory, *, enforce_domain_cap: bool) -> bool:
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)
-
             if url_key in seen_urls:
-                continue
+                return False
             if story.fingerprint in seen_fingerprints:
-                continue
+                return False
             if loose_fp in seen_loose_fingerprints:
-                continue
-            if domain_counts[story.source_domain] >= settings.max_items_per_domain_per_sector:
-                continue
+                return False
+            if enforce_domain_cap and domain_counts[story.source_domain] >= settings.max_items_per_domain_per_sector:
+                return False
+            return True
+
+        def _insert_story(story: ScoredStory) -> None:
+            nonlocal sector_inserted
+            url_key = canonicalize_url(story.url)
+            loose_fp = fingerprint_title_loose(story.title)
 
             model = Story(
                 title=story.title,
@@ -92,6 +107,31 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             seen_fingerprints.add(story.fingerprint)
             seen_loose_fingerprints.add(loose_fp)
             domain_counts[story.source_domain] += 1
+            sector_inserted += 1
+
+        if sector in local_quota_sectors:
+            by_subtopic: dict[str, list[ScoredStory]] = defaultdict(list)
+            for story in sorted_sector_stories:
+                by_subtopic[story.subtopic].append(story)
+
+            for candidates in by_subtopic.values():
+                subtopic_inserted = 0
+                for story in candidates:
+                    if sector_inserted >= sector_limit:
+                        break
+                    if not _can_insert(story, enforce_domain_cap=False):
+                        continue
+                    _insert_story(story)
+                    subtopic_inserted += 1
+                    if subtopic_inserted >= settings.min_items_per_local_subtopic:
+                        break
+
+        for story in sorted_sector_stories:
+            if sector_inserted >= sector_limit:
+                break
+            if not _can_insert(story, enforce_domain_cap=True):
+                continue
+            _insert_story(story)
 
     db.commit()
     return inserted

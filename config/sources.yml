@@ -50,16 +50,42 @@ sectors:
   Hamburg:
     - name: "Lokale Politik & Gesetze"
       query: "Hamburg Nachrichten Lokalpolitik Senat Bürgerschaft Gesetzesänderung Verkehr Wohnen"
+    - name: "Ausschreibungen & Vergaben"
+      query: "Hamburg Ausschreibung Vergabe Bau Infrastruktur öffentliche Aufträge Bekanntmachung"
+    - name: "Immobilienrecht & Neubau"
+      query: "Hamburg Neubau Gesetz Bauordnung Bebauungsplan Genehmigung Wohnungsbau"
+    - name: "Ferienvermietung & Regulatorik"
+      query: "Hamburg Ferienwohnung Zweckentfremdung Airbnb Vermietung Genehmigung Gesetz"
+    - name: "Hotels & Hospitality"
+      query: "Hamburg Hotel Neueröffnung Hospitality Tourismus Quartier Projekt"
+    - name: "Nachhaltigkeit & Quartiere"
+      query: "Hamburg Nachhaltigkeit Klimaplan Wärmewende grüne Quartiere Mobilität Fortschritt"
     - name: "Events & Kultur"
       query: "Hamburg Veranstaltungen Events Kultur Konzert Festival heute Wochenende"
+    - name: "St. Pauli & Kiez"
+      query: "Hamburg St Pauli Kiez Reeperbahn lokale Nachrichten Polizei Kultur Szene"
+    - name: "Schlagzeilen & Brennpunkte"
+      query: "Hamburg Schlagzeilen Brennpunkt Eilmeldung Polizeimeldung Politik Wirtschaft heute"
     - name: "Wirtschaft & Stadtleben"
       query: "Hamburg Wirtschaft Hafen Innenstadt Verkehr Stadtleben lokale Nachrichten"
 
   Mallorca:
     - name: "Lokale Politik & Gesetze"
       query: "Mallorca noticias local politica ayuntamiento Palma Balears ley cambio"
+    - name: "Ausschreibungen & Vergaben"
+      query: "Mallorca licitacion concurso publico obras infraestructura ayuntamiento balears"
+    - name: "Immobilienrecht & Neubau"
+      query: "Mallorca obra nueva urbanismo licencia normativa vivienda construccion balears"
+    - name: "Ferienlizenzen & Airbnb"
+      query: "Mallorca licencia vacacional alquiler turistico Airbnb normativa sancion"
+    - name: "Hoteleroeffnungen & Hospitality"
+      query: "Mallorca apertura hotel nueva inauguracion hospitality turismo"
+    - name: "Nachhaltigkeit & Inselprojekte"
+      query: "Mallorca sostenibilidad energia renovable agua movilidad proyecto"
     - name: "Events & Gesellschaft"
       query: "Mallorca eventos cultura agenda Palma noticias locales hoy"
+    - name: "Ostküste & Gemeinden"
+      query: "Mallorca costa este Manacor Felanitx Santanyi Cala Ratjada noticias"
     - name: "Wirtschaft & Tourismus"
       query: "Mallorca turismo economia vivienda transporte aeropuerto noticias"
 
@@ -115,6 +141,14 @@ trusted_domains:
   ultimahora.es: 1.7
   diariodemallorca.es: 1.8
   hosteltur.com: 1.6
+  ahgz.de: 1.8
+  tophotel.de: 1.7
+  hotelvor9.de: 1.6
+  tourism-review.com: 1.5
+  cronicabalear.es: 1.7
+  cope.es: 1.6
+  rne.es: 1.6
+  hamburg-business.com: 1.6
 
 excluded_domains:
   - "youtube.com"
