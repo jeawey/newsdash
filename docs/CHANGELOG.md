@@ -656,3 +656,42 @@ Für jeden Eintrag:
   - Keine `<a href=...>`-Fragmente mehr im Frontend, selbst wenn solche Werte in der DB vorhanden sind.
 - Rollback-Hinweis:
   - `strip_html()`-Normalisierung im Output-Update von `app/main.py` entfernen.
+
+### 2026-03-02 00:12:30 CET | Store Hardening (Malformed Titel Block + Politics Cluster=1)
+- Änderung:
+  - `worker/store.py`:
+    - Stories mit offensichtlichen HTML-Anker-Resten im Titel (`<a`, `href=`, `</a>`) werden vor Persistierung verworfen (`malformed_title`).
+    - sektorales Cluster-Limit eingeführt: `Politics` erlaubt nur noch `1` Story pro ähnlichem Inhaltscluster.
+    - bestehende Content-Cluster- und Similarity-Dedupe-Checks nutzen dieses sektorale Limit.
+- Grund:
+  - Verhindert kaputte Feed-Titel im UI und reduziert paraphrasierte Politics-Duplikate stärker.
+- Erwarteter Effekt:
+  - Keine neuen `<a href=...>`-Titel in gespeicherten Stories.
+  - Bei Politics pro Event i. d. R. nur noch die beste Story statt 2+ Varianten.
+- Rollback-Hinweis:
+  - `malformed_title`-Check und `_SECTOR_MAX_SIMILAR_PER_CLUSTER["Politics"]` in `worker/store.py` zurücksetzen.
+
+### 2026-03-02 00:24:50 CET | Scheduler/Fetcher (Near-Realtime Fast Lane + Performance)
+- Änderung:
+  - `app/settings.py`:
+    - neue Fast-Lane-Parameter (`FAST_LANE_*`) für Intervall, Runtime, Raw-Budget, Feed-Share, Quellen-Selektion.
+  - `worker/fetcher.py`:
+    - `build_fast_lane_source_config()` eingeführt: reduziert Quellmenge für Near-Realtime.
+    - Fast-Lane selektiert nur Top-Queries/Top-Feeds je Sektor und bevorzugt vertrauensstarke Domains.
+    - `fetch_all_stories()` unterstützt nun overridebare Budgets (`max_raw`, `direct_share`, `direct_floor`) für unterschiedliche Run-Typen.
+  - `worker/jobs.py`:
+    - neuer Job `fast_breaking` alle `FAST_LANE_INTERVAL_MINUTES` (Default 5 Min).
+    - bestehender Voll-Run `hourly_breaking` auf Minute `:02` verschoben, um Kollisionen mit Fast-Lane zu reduzieren.
+    - `run_pipeline()` nutzt je nach `run_type` unterschiedliche Fetch-Budgets/Runtime.
+- Definition "Top Sources/Feeds" in Fast-Lane:
+  - Direct feeds werden nach Trust-Score (`trusted_domains`) priorisiert.
+  - Mindestvertrauen über `FAST_LANE_MIN_TRUSTED_DOMAIN_WEIGHT` (Default `1.1`).
+  - Aggregator-Wrappers (`Feedspot`, `Countries/`, `DE RSSV`) erhalten Ranking-Penalty.
+  - Cap pro Sektor: `FAST_LANE_FEEDS_PER_SECTOR` (Default `24`).
+  - Query-Coverage bleibt breit, aber begrenzt über `FAST_LANE_QUERIES_PER_SECTOR` (Default `4`).
+- Grund:
+  - Near-Realtime-Aktualität ohne Voll-Last auf allen 1400 Feeds in jedem Zyklus.
+- Erwarteter Effekt:
+  - deutlich schnellere, häufigere Updates mit stabiler Worker-Performance; stündlicher Full-Run bleibt als Backfill.
+- Rollback-Hinweis:
+  - `fast_breaking`-Job entfernen und Fast-Lane-Selection/Overrides rückbauen.

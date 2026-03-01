@@ -17,7 +17,7 @@ from app.models import Base, JobRun
 from app.database import engine
 from app.settings import get_settings
 from worker.config import load_source_config
-from worker.fetcher import fetch_all_stories
+from worker.fetcher import build_fast_lane_source_config, fetch_all_stories
 from worker.scoring import score_stories
 from worker.store import RunLogger, persist_scored_stories
 from worker.telegram import send_digest
@@ -106,10 +106,23 @@ def run_pipeline(run_type: str) -> None:
 
         try:
             source_config = load_source_config()
+            fetch_max_runtime = settings.fetch_max_runtime_seconds
+            fetch_max_raw = settings.max_raw_stories_per_run
+            fetch_direct_share = settings.direct_feed_raw_share
+            fetch_direct_floor = settings.min_direct_feed_raw_stories
+            if run_type == "fast":
+                source_config = build_fast_lane_source_config(source_config)
+                fetch_max_runtime = settings.fast_lane_max_runtime_seconds
+                fetch_max_raw = settings.fast_lane_max_raw_stories_per_run
+                fetch_direct_share = settings.fast_lane_direct_feed_raw_share
+                fetch_direct_floor = settings.fast_lane_min_direct_feed_raw_stories
             t0 = time.monotonic()
             raw = fetch_all_stories(
                 source_config,
-                max_runtime_seconds=settings.fetch_max_runtime_seconds,
+                max_runtime_seconds=fetch_max_runtime,
+                max_raw_stories=fetch_max_raw,
+                direct_share_override=fetch_direct_share,
+                direct_floor_override=fetch_direct_floor,
             )
             t1 = time.monotonic()
             scored = score_stories(raw, source_config.trusted_domains)
@@ -161,6 +174,10 @@ def run_hourly_breaking() -> None:
     run_pipeline("hourly")
 
 
+def run_fast_breaking() -> None:
+    run_pipeline("fast")
+
+
 def start_scheduler() -> None:
     tz = pytz.timezone(settings.timezone)
     scheduler = BlockingScheduler(timezone=tz)
@@ -175,12 +192,22 @@ def start_scheduler() -> None:
     )
     scheduler.add_job(
         run_hourly_breaking,
-        trigger=CronTrigger(minute=5, timezone=tz),
+        trigger=CronTrigger(minute=2, timezone=tz),
         id="hourly_breaking",
         replace_existing=True,
         max_instances=1,
         coalesce=True,
     )
+    if settings.fast_lane_enabled:
+        fast_interval = max(1, min(59, settings.fast_lane_interval_minutes))
+        scheduler.add_job(
+            run_fast_breaking,
+            trigger=CronTrigger(minute=f"*/{fast_interval}", timezone=tz),
+            id="fast_breaking",
+            replace_existing=True,
+            max_instances=1,
+            coalesce=True,
+        )
 
     Base.metadata.create_all(bind=engine)
 

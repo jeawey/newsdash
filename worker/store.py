@@ -273,6 +273,11 @@ _SECTOR_CONTENT_SIMILARITY_THRESHOLD: dict[str, float] = {
     "default": 0.52,
 }
 
+_SECTOR_MAX_SIMILAR_PER_CLUSTER: dict[str, int] = {
+    # Keep politics highly diverse by allowing only one story per event-cluster.
+    "Politics": 1,
+}
+
 
 def _count_sector_hits(sector: str, text: str) -> int:
     terms = _SECTOR_RELEVANCE_TERMS.get(sector, ())
@@ -377,6 +382,10 @@ def _similarity_threshold_for_sector(sector: str) -> float:
         sector,
         _SECTOR_CONTENT_SIMILARITY_THRESHOLD["default"],
     )
+
+
+def _max_similar_per_cluster_for_sector(sector: str, default_limit: int) -> int:
+    return _SECTOR_MAX_SIMILAR_PER_CLUSTER.get(sector, default_limit)
 
 
 def _find_similar_cluster(
@@ -515,6 +524,9 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             enforce_domain_cap: bool,
             enforce_loose_dedupe: bool = True,
         ) -> tuple[bool, str | None]:
+            raw_title = (story.title or "").lower()
+            if "<a" in raw_title or "href=" in raw_title or "</a>" in raw_title:
+                return False, "malformed_title"
             if not _passes_hard_relevance_gate(story, settings.hard_relevance_gate_enabled):
                 return False, "hard_relevance_gate"
             min_story_score = _SECTOR_MIN_STORY_SCORE.get(sector, settings.min_story_score)
@@ -546,12 +558,16 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 domain_cap += 4
             if enforce_domain_cap and domain_counts[story.source_domain] >= domain_cap:
                 return False, "domain_cap"
+            cluster_limit = _max_similar_per_cluster_for_sector(
+                sector,
+                settings.max_similar_stories_per_cluster,
+            )
             cluster_key = _content_cluster_key(story.title, story.summary)
-            if content_cluster_counts[cluster_key] >= settings.max_similar_stories_per_cluster:
+            if content_cluster_counts[cluster_key] >= cluster_limit:
                 return False, "duplicate_content_cluster"
             tokens = _content_tokens(story.title, story.summary)
             match_idx = _find_similar_cluster(clusters=content_clusters, tokens=tokens, sector=sector)
-            if match_idx is not None and int(content_clusters[match_idx]["count"]) >= settings.max_similar_stories_per_cluster:
+            if match_idx is not None and int(content_clusters[match_idx]["count"]) >= cluster_limit:
                 return False, "duplicate_content_similarity"
             return True, None
 

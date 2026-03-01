@@ -49,6 +49,19 @@ _SECTOR_DEFAULT_SUBTOPIC: dict[str, str] = {
     "Politics": "Global Power Moves",
 }
 
+_FAST_LANE_SECTOR_PRIORITY: tuple[str, ...] = (
+    "Politics",
+    "AI",
+    "Crypto",
+    "Sustainability",
+    "Biotechnologie",
+    "Kenya",
+    "Hamburg",
+    "Mallorca",
+    "Cannabis",
+    "Frequenzen",
+)
+
 _QUERY_SECTOR_MIN_FLOORS: dict[str, int] = {
     "Sustainability": 70,
     "Biotechnologie": 70,
@@ -1038,7 +1051,78 @@ def _partition_stories_with_sector_limits(
     return accepted, rejected
 
 
-def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None = None) -> list[RawStory]:
+def build_fast_lane_source_config(config: SourceConfig) -> SourceConfig:
+    """
+    Build a reduced source set for near-realtime runs:
+    - prioritize trusted direct feeds and editorial source names
+    - cap per-sector feeds/queries to keep fetch latency predictable
+    """
+    sector_rank = {sector: idx for idx, sector in enumerate(_FAST_LANE_SECTOR_PRIORITY)}
+    min_trust = settings.fast_lane_min_trusted_domain_weight
+    feeds_per_sector = max(1, settings.fast_lane_feeds_per_sector)
+    queries_per_sector = max(1, settings.fast_lane_queries_per_sector)
+
+    def _rank_sector(sector: str) -> int:
+        return sector_rank.get(sector, len(_FAST_LANE_SECTOR_PRIORITY))
+
+    # Queries: deterministic top N per sector (configured order) with sector priority.
+    queries_by_sector: dict[str, list[QueryConfig]] = defaultdict(list)
+    for q in config.queries:
+        queries_by_sector[q.sector].append(q)
+    selected_queries: list[QueryConfig] = []
+    for sector in sorted(queries_by_sector, key=_rank_sector):
+        selected_queries.extend(queries_by_sector[sector][:queries_per_sector])
+
+    # Direct feeds: trust-first ranking + sector priority + non-aggregator bonus.
+    scored_feeds: list[tuple[float, int, DirectFeedConfig]] = []
+    for feed in config.direct_feeds:
+        domain = extract_domain(feed.url)
+        trust = config.trusted_domains.get(domain, 1.0)
+        if trust < min_trust:
+            continue
+        source_name = (feed.source_name or "").lower()
+        aggregator_penalty = 0.0
+        if source_name.startswith("feedspot") or source_name.startswith("countries/") or source_name.startswith("de rssv"):
+            aggregator_penalty = 0.25
+        sector_score = max(0, 10 - _rank_sector(feed.sector)) * 0.02
+        score = trust + sector_score - aggregator_penalty
+        scored_feeds.append((score, _rank_sector(feed.sector), feed))
+
+    scored_feeds.sort(key=lambda item: (item[1], -item[0], item[2].source_name, item[2].url))
+    selected_direct: list[DirectFeedConfig] = []
+    per_sector_counts: dict[str, int] = defaultdict(int)
+    for _, _, feed in scored_feeds:
+        if per_sector_counts[feed.sector] >= feeds_per_sector:
+            continue
+        selected_direct.append(feed)
+        per_sector_counts[feed.sector] += 1
+
+    logger.warning(
+        "Fast lane source selection: queries=%s/%s direct=%s/%s (per_sector_query=%s per_sector_feed=%s min_trust=%.2f)",
+        len(selected_queries),
+        len(config.queries),
+        len(selected_direct),
+        len(config.direct_feeds),
+        queries_per_sector,
+        feeds_per_sector,
+        min_trust,
+    )
+    return SourceConfig(
+        queries=selected_queries,
+        direct_feeds=selected_direct,
+        trusted_domains=config.trusted_domains,
+        excluded_domains=config.excluded_domains,
+    )
+
+
+def fetch_all_stories(
+    config: SourceConfig,
+    *,
+    max_runtime_seconds: int | None = None,
+    max_raw_stories: int | None = None,
+    direct_share_override: float | None = None,
+    direct_floor_override: int | None = None,
+) -> list[RawStory]:
     collected_queries: list[RawStory] = []
     collected_direct: list[RawStory] = []
     overflow_queries: list[RawStory] = []
@@ -1049,9 +1133,11 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
     processed_queries = 0
     processed_direct = 0
     max_runtime = max_runtime_seconds if max_runtime_seconds is not None else settings.fetch_max_runtime_seconds
-    max_raw = settings.max_raw_stories_per_run
-    direct_share = min(max(settings.direct_feed_raw_share, 0.0), 1.0)
-    direct_floor = max(0, settings.min_direct_feed_raw_stories if direct_count else 0)
+    max_raw = max_raw_stories if max_raw_stories is not None else settings.max_raw_stories_per_run
+    configured_share = settings.direct_feed_raw_share if direct_share_override is None else direct_share_override
+    direct_share = min(max(configured_share, 0.0), 1.0)
+    configured_floor = settings.min_direct_feed_raw_stories if direct_floor_override is None else direct_floor_override
+    direct_floor = max(0, configured_floor if direct_count else 0)
     direct_budget = min(max_raw, max(int(max_raw * direct_share), direct_floor)) if direct_count else 0
     query_budget = max_raw - direct_budget
     if query_count == 0 and direct_budget < max_raw:

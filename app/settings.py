@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     min_direct_feed_raw_stories: int = Field(default=900, alias="MIN_DIRECT_FEED_RAW_STORIES")
     direct_feed_raw_share: float = Field(default=0.55, alias="DIRECT_FEED_RAW_SHARE")
     scoring_explain_log_limit: int = Field(default=8, alias="SCORING_EXPLAIN_LOG_LIMIT")
+    fast_lane_enabled: bool = Field(default=True, alias="FAST_LANE_ENABLED")
+    fast_lane_interval_minutes: int = Field(default=5, alias="FAST_LANE_INTERVAL_MINUTES")
+    fast_lane_max_runtime_seconds: int = Field(default=150, alias="FAST_LANE_MAX_RUNTIME_SECONDS")
+    fast_lane_max_raw_stories_per_run: int = Field(default=800, alias="FAST_LANE_MAX_RAW_STORIES_PER_RUN")
+    fast_lane_min_direct_feed_raw_stories: int = Field(default=500, alias="FAST_LANE_MIN_DIRECT_FEED_RAW_STORIES")
+    fast_lane_direct_feed_raw_share: float = Field(default=0.8, alias="FAST_LANE_DIRECT_FEED_RAW_SHARE")
+    fast_lane_queries_per_sector: int = Field(default=4, alias="FAST_LANE_QUERIES_PER_SECTOR")
+    fast_lane_feeds_per_sector: int = Field(default=24, alias="FAST_LANE_FEEDS_PER_SECTOR")
+    fast_lane_min_trusted_domain_weight: float = Field(default=1.1, alias="FAST_LANE_MIN_TRUSTED_DOMAIN_WEIGHT")
 
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()
