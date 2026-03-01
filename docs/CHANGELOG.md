@@ -479,3 +479,30 @@ Für jeden Eintrag:
   - Höhere Netto-Inserts in `Cannabis` und `Frequenzen`, stabilere `AI`-Zufuhr bei gleichbleibender Gesamtqualität.
 - Rollback-Hinweis:
   - Änderungen in `worker/scoring.py` und `worker/store.py` auf den vorherigen Stand zurücksetzen.
+
+### 2026-03-01 22:24:40 CET | Final Tweaks (Capacity-Aware Store + Underfilled Sector Floors)
+- Änderung:
+  - `worker/store.py`:
+    - Persistenz ist jetzt kapazitätsbewusst: pro Sektor werden nur noch Stories bis zur verbleibenden Tageskapazität (`MAX_ITEMS_PER_SECTOR - existing_rows`) eingefügt.
+    - Sektoren, die bereits auf Tagescap sind, werden im Insert-Loop vollständig übersprungen (vermeidet Insert+Prune-Churn).
+    - sektorale Mindestscore-Schwellen für unterfüllte Bereiche weiter gelockert:
+      - `Hamburg`: `0.70 -> 0.60`
+      - `Cannabis`: `0.45 -> 0.40`
+      - `Frequenzen`: `0.30 -> 0.25`
+- Grund:
+  - Logs zeigten hohe Store-Zeit durch unnötige Inserts in bereits volle Sektoren sowie verbleibende Unterversorgung in `Hamburg`, `Cannabis` und `Frequenzen`.
+- Erwarteter Effekt:
+  - Deutlich weniger Store-Laufzeit/Churn bei vollen Sektoren und bessere Auffüllung der letzten offenen Slots in unterversorgten Sektoren.
+- Rollback-Hinweis:
+  - Änderungen in `worker/store.py` auf den vorherigen Stand zurücksetzen.
+
+### 2026-03-01 22:27:20 CET | Hotfix (Frequenzen Score Floor)
+- Änderung:
+  - `worker/store.py`:
+    - sektoraler Mindestscore für `Frequenzen` weiter gesenkt: `0.25 -> 0.20`.
+- Grund:
+  - Gewünscht zur besseren Auffüllung/Ergebnisdichte im Sektor `Frequenzen`.
+- Erwarteter Effekt:
+  - Mehr `Frequenzen`-Stories passieren die Store-Score-Hürde.
+- Rollback-Hinweis:
+  - Wert in `worker/store.py` wieder auf `0.25` setzen.

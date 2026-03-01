@@ -172,11 +172,11 @@ _SECTOR_MIN_STORY_SCORE: dict[str, float] = {
     "Crypto": 0.80,
     "Biotechnologie": 0.55,
     "Sustainability": 0.50,
-    "Frequenzen": 0.30,
+    "Frequenzen": 0.20,
     "Kenya": 0.40,
-    "Cannabis": 0.45,
+    "Cannabis": 0.40,
     "Mallorca": 0.70,
-    "Hamburg": 0.70,
+    "Hamburg": 0.60,
 }
 
 _SECTOR_MIN_SOCIAL_STORY_SCORE: dict[str, float] = {
@@ -411,9 +411,16 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
 
         sorted_sector_stories = sorted(sector_stories, key=lambda s: s.score, reverse=True)
 
-        sector_limit = settings.max_items_per_sector
+        existing_count = len(existing_rows)
+        sector_limit_remaining = max(0, settings.max_items_per_sector - existing_count)
+        if sector_limit_remaining == 0:
+            # Sector already full for current snapshot; skip costly insert/prune churn.
+            continue
+
+        sector_limit = sector_limit_remaining
         sector_target = sector_minimum_targets.get(sector, settings.min_items_per_sector_target)
-        sector_target = min(sector_target, sector_limit)
+        sector_target_remaining = max(0, sector_target - existing_count)
+        sector_target = min(sector_target_remaining, sector_limit)
         if sector in local_quota_sectors:
             subtopics = {story.subtopic for story in sorted_sector_stories}
             local_quota_cap = len(subtopics) * settings.min_items_per_local_subtopic
