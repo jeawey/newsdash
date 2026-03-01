@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from functools import lru_cache
+import re
 from typing import Optional
 
 import pytz
@@ -23,12 +24,57 @@ templates = Jinja2Templates(directory="app/templates")
 settings = get_settings()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+_SOURCE_DOMAIN_NAME_OVERRIDES = {
+    "nytimes.com": "The New York Times",
+    "wsj.com": "The Wall Street Journal",
+    "ft.com": "Financial Times",
+    "bbc.com": "BBC",
+    "cnn.com": "CNN",
+}
+
 
 def _normalize_sector_name(sector: str) -> str:
     aliases = {
         "Biotechnology": "Biotechnologie",
     }
     return aliases.get(sector, sector)
+
+
+def _title_from_domain(domain: str) -> str:
+    host = (domain or "").lower().removeprefix("www.").strip()
+    if not host:
+        return "Unknown source"
+    if host in _SOURCE_DOMAIN_NAME_OVERRIDES:
+        return _SOURCE_DOMAIN_NAME_OVERRIDES[host]
+    root = host.split(".", 1)[0]
+    root = re.sub(r"[-_]+", " ", root).strip()
+    if not root:
+        return "Unknown source"
+    parts = [p.upper() if len(p) <= 3 else p.capitalize() for p in root.split()]
+    return " ".join(parts)
+
+
+def _normalize_source_name(source_name: str, source_domain: str) -> str:
+    raw = (source_name or "").strip()
+    if not raw:
+        return _title_from_domain(source_domain)
+
+    cleaned = re.sub(r"\s+", " ", raw).strip()
+
+    if cleaned.lower().startswith("feedspot"):
+        if ")" in cleaned:
+            tail = cleaned.split(")", 1)[1].strip(" -:|")
+            if tail:
+                return tail
+        cleaned = re.sub(r"^feedspot\s+[^\d]*\d+\s*(\([^)]*\))?\s*", "", cleaned, flags=re.IGNORECASE).strip(" -:|")
+        if cleaned and not cleaned.lower().startswith("www."):
+            return cleaned
+        return _title_from_domain(source_domain)
+
+    cleaned = re.sub(r"^\([^)]*\)\s*", "", cleaned).strip()
+    if re.fullmatch(r"(https?://)?(www\.)?[a-z0-9.-]+\.[a-z]{2,}(/.*)?", cleaned.lower()):
+        return _title_from_domain(source_domain or cleaned)
+    return cleaned
 
 
 def _configured_sectors() -> list[str]:
@@ -69,6 +115,21 @@ def _select_diverse_top_stories(stories: list[Story], *, limit: int = 10, max_pe
         if len(selected) >= limit:
             break
     return selected
+
+
+_HOT_DEDUP_STOPWORDS = {
+    "the", "and", "for", "with", "from", "that", "this", "über", "und", "der", "die", "das",
+    "von", "mit", "auf", "für", "nach", "ist", "are", "was", "were", "news", "update", "live",
+}
+
+
+def _hot_similarity_key(title: str, summary: str) -> str:
+    text = f"{title} {summary}".lower()
+    tokens = re.findall(r"[a-zA-ZäöüÄÖÜß0-9]{4,}", text)
+    cleaned = [token for token in tokens if token not in _HOT_DEDUP_STOPWORDS]
+    if not cleaned:
+        return re.sub(r"\s+", " ", title.lower()).strip()[:120]
+    return " ".join(cleaned[:14])
 
 
 @lru_cache(maxsize=1)
@@ -163,13 +224,21 @@ def get_dashboard_data(
     sectors: dict[str, list[StoryOut]] = {sector: [] for sector in configured_sectors}
     for story in filtered_stories:
         story_out = StoryOut.model_validate(story).model_copy(
-            update={"sector": _normalize_sector_name(story.sector)}
+            update={
+                "sector": _normalize_sector_name(story.sector),
+                "source_name": _normalize_source_name(story.source_name, story.source_domain),
+            }
         )
         sectors.setdefault(story_out.sector, []).append(story_out)
 
     top_story_pool = _select_diverse_top_stories(filtered_stories, limit=10, max_per_sector=3)
     top_stories = [
-        StoryOut.model_validate(s).model_copy(update={"sector": _normalize_sector_name(s.sector)})
+        StoryOut.model_validate(s).model_copy(
+            update={
+                "sector": _normalize_sector_name(s.sector),
+                "source_name": _normalize_source_name(s.source_name, s.source_domain),
+            }
+        )
         for s in top_story_pool
     ]
     return DashboardResponse(snapshot_date=target_date, sectors=sectors, top_stories=top_stories)
@@ -183,15 +252,27 @@ def dashboard(
 ) -> HTMLResponse:
     payload = get_dashboard_data(snapshot_date=snapshot_date, db=db)
 
-    latest_story_ids: set[int] = set()
-    for story in payload.top_stories:
-        if story.score >= settings.hourly_breaking_threshold:
-            latest_story_ids.add(story.id)
-
+    hot_candidates: list[StoryOut] = []
+    hot_candidates.extend(payload.top_stories)
     for stories in payload.sectors.values():
-        for story in stories:
-            if story.score >= settings.hourly_breaking_threshold:
-                latest_story_ids.add(story.id)
+        hot_candidates.extend(stories)
+
+    best_hot_by_key: dict[str, StoryOut] = {}
+    for story in hot_candidates:
+        if story.score <= settings.hot_badge_threshold:
+            continue
+        key = _hot_similarity_key(story.title, story.summary)
+        existing = best_hot_by_key.get(key)
+        if existing is None:
+            best_hot_by_key[key] = story
+            continue
+        if story.score > existing.score:
+            best_hot_by_key[key] = story
+            continue
+        if story.score == existing.score and story.published_at > existing.published_at:
+            best_hot_by_key[key] = story
+
+    latest_story_ids: set[int] = {story.id for story in best_hot_by_key.values()}
 
     return templates.TemplateResponse(
         "index.html",

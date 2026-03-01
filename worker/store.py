@@ -11,7 +11,7 @@ from app.models import JobRun, Story
 from app.settings import get_settings
 from worker.translate import translate_to_german
 from worker.types import ScoredStory
-from worker.utils import canonicalize_url, fingerprint_title_loose
+from worker.utils import canonicalize_url, fingerprint_title_loose, strip_html
 
 logger = logging.getLogger(__name__)
 
@@ -261,6 +261,12 @@ _POLITICS_LOW_SIGNAL_TERMS: tuple[str, ...] = (
     "celebrity",
 )
 
+_CONTENT_CLUSTER_STOPWORDS = {
+    "the", "and", "for", "with", "from", "that", "this", "their", "will", "after", "amid",
+    "der", "die", "das", "und", "für", "mit", "von", "nach", "bei", "eine", "einer",
+    "news", "update", "updates", "live", "today", "latest", "report", "reports",
+}
+
 
 def _count_sector_hits(sector: str, text: str) -> int:
     terms = _SECTOR_RELEVANCE_TERMS.get(sector, ())
@@ -324,6 +330,25 @@ def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, e
         return _is_high_signal_politics_story(text)
     required = _SECTOR_MIN_HITS.get(sector, 1)
     return _count_sector_hits(sector, text) >= required
+
+
+def _content_cluster_key(title: str, summary: str) -> str:
+    text = f"{title} {summary}".lower()
+    tokens = re.findall(r"[a-zA-ZäöüÄÖÜß0-9]{4,}", text)
+    cleaned = [token for token in tokens if token not in _CONTENT_CLUSTER_STOPWORDS]
+    if not cleaned:
+        return fingerprint_title_loose(title)
+    # Stable cluster key: first unique tokens preserve headline semantics.
+    unique_tokens: list[str] = []
+    seen: set[str] = set()
+    for token in cleaned:
+        if token in seen:
+            continue
+        seen.add(token)
+        unique_tokens.append(token)
+        if len(unique_tokens) >= 14:
+            break
+    return " ".join(unique_tokens)
 
 
 class RunLogger:
@@ -405,9 +430,11 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         seen_urls = {canonicalize_url(row.url) for row in existing_rows}
         seen_fingerprints = {row.fingerprint for row in existing_rows}
         seen_loose_fingerprints = {fingerprint_title_loose(row.title) for row in existing_rows}
+        content_cluster_counts: dict[str, int] = defaultdict(int)
         domain_counts: dict[str, int] = defaultdict(int)
         for row in existing_rows:
             domain_counts[row.source_domain] += 1
+            content_cluster_counts[_content_cluster_key(row.title or "", row.summary or "")] += 1
 
         sorted_sector_stories = sorted(sector_stories, key=lambda s: s.score, reverse=True)
 
@@ -465,14 +492,18 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 domain_cap += 4
             if enforce_domain_cap and domain_counts[story.source_domain] >= domain_cap:
                 return False, "domain_cap"
+            cluster_key = _content_cluster_key(story.title, story.summary)
+            if content_cluster_counts[cluster_key] >= settings.max_similar_stories_per_cluster:
+                return False, "duplicate_content_cluster"
             return True, None
 
         def _insert_story(story: ScoredStory) -> None:
             nonlocal sector_inserted
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)
-            title_de = translate_to_german(story.title)
-            summary_de = translate_to_german(story.summary)
+            cluster_key = _content_cluster_key(story.title, story.summary)
+            title_de = strip_html(translate_to_german(story.title))
+            summary_de = strip_html(translate_to_german(story.summary))
 
             model = Story(
                 title=title_de,
@@ -498,6 +529,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             seen_urls.add(url_key)
             seen_fingerprints.add(story.fingerprint)
             seen_loose_fingerprints.add(loose_fp)
+            content_cluster_counts[cluster_key] += 1
             domain_counts[story.source_domain] += 1
             sector_inserted += 1
             insert_counts[sector] += 1

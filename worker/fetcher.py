@@ -16,7 +16,7 @@ from dateutil import parser as date_parser
 from app.settings import get_settings
 from worker.config import DirectFeedConfig, QueryConfig, SourceConfig, iter_direct_feeds, iter_queries
 from worker.types import RawStory
-from worker.utils import build_summary, canonicalize_url, extract_domain, google_news_rss_url
+from worker.utils import build_summary, canonicalize_url, extract_domain, google_news_rss_url, strip_html
 
 _RSS_VERZEICHNIS_HOST = "www.rss-verzeichnis.de"
 _RSS_HINT_RE = re.compile(r"RSS-Feed-URL.*?href=[\"']([^\"']+)[\"']", re.IGNORECASE | re.DOTALL)
@@ -784,7 +784,7 @@ def _parse_published(entry: dict) -> datetime:
 
 
 def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Optional[RawStory]:
-    title = (entry.get("title") or "").strip()
+    title = strip_html(entry.get("title") or "")
     url = (entry.get("link") or "").strip()
     if not title or not url:
         return None
@@ -844,7 +844,7 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
 
 
 def _to_story_from_feed(feed_cfg: DirectFeedConfig, entry: dict, excluded_domains: set[str]) -> Optional[RawStory]:
-    title = (entry.get("title") or "").strip()
+    title = strip_html(entry.get("title") or "")
     url = (entry.get("link") or "").strip()
     if not title or not url:
         return None

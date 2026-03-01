@@ -18,7 +18,17 @@ def extract_domain(url: str) -> str:
 
 
 def strip_html(text: str) -> str:
-    clean = re.sub(r"<[^>]+>", " ", text)
+    if not text:
+        return ""
+    clean = text
+    # Decode escaped HTML first (some feeds deliver entities like &lt;a ...&gt;).
+    for _ in range(2):
+        clean = html.unescape(clean)
+    # Remove script/style payloads if present.
+    clean = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", clean, flags=re.IGNORECASE | re.DOTALL)
+    # Remove tags.
+    clean = re.sub(r"<[^>]+>", " ", clean)
+    # Decode any remaining entities and normalize whitespace.
     clean = html.unescape(clean)
     return re.sub(r"\s+", " ", clean).strip()
 

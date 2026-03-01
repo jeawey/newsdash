@@ -545,3 +545,76 @@ Für jeden Eintrag:
   - Relevanzwerte im UI sind konsistent mit Legende und `HOURLY_BREAKING_THRESHOLD=7`.
 - Rollback-Hinweis:
   - Score-Skalierung in `worker/scoring.py` entfernen und Schwellen in `worker/store.py` auf Vorwerte zurücksetzen.
+
+### 2026-03-01 23:05:10 CET | Web (HOT Badge nur noch > 8.0)
+- Änderung:
+  - `app/settings.py`:
+    - neue Konfiguration `HOT_BADGE_THRESHOLD` (Default `8.0`) eingeführt.
+  - `app/main.py`:
+    - HOT-Badge-Logik auf `story.score > HOT_BADGE_THRESHOLD` umgestellt (strictly greater).
+- Grund:
+  - Gewünscht: HOT nur für sehr hohe Relevanz, oberhalb von 8.
+- Erwarteter Effekt:
+  - Stories mit Score `<= 8.0` erhalten kein HOT-Badge mehr.
+- Rollback-Hinweis:
+  - HOT-Badge-Bedingung in `app/main.py` wieder auf den Breaking-Threshold zurückstellen.
+
+### 2026-03-01 23:16:40 CET | Web/UI (Relevanz-Badge Gradient + HOT Dedupe)
+- Änderung:
+  - `app/templates/index.html`:
+    - Relevanz-Dekoration nutzt jetzt die echte 1-10 Score-Skala direkt (kein altes 0-4.4 Rescaling mehr).
+    - Pro Story wird zusätzlich `data-relevance-step` (`1..10`) gesetzt.
+  - `app/static/styles.css`:
+    - Relevanz-Badges folgen nun explizit den gleichen Farb-Gradient-Stufen wie die 1-10 Legende (1/2, 3/4, 5/6, 7/8, 9/10).
+  - `app/main.py`:
+    - HOT-Badge wird dedupliziert: inhaltlich ähnliche Stories werden geclustert, und pro Cluster erhält nur die Story mit dem höchsten Relevanz-Score das HOT-Badge.
+- Grund:
+  - Badge-Farben sollten konsistent zur Legende sein; HOT sollte nicht mehrfach für inhaltlich gleiche Meldungen erscheinen.
+- Erwarteter Effekt:
+  - Sichtbar konsistente Relevanzfarben auf allen Story-Badges.
+  - Weniger HOT-Duplikate bei gleichartigen Meldungen aus verschiedenen Quellen.
+- Rollback-Hinweis:
+  - Änderungen in `app/main.py`, `app/templates/index.html` und `app/static/styles.css` auf den vorherigen Stand zurücksetzen.
+
+### 2026-03-01 23:27:30 CET | Store (Content-Cluster Dedupe für Live-Feed)
+- Änderung:
+  - `app/settings.py`:
+    - neue Konfiguration `MAX_SIMILAR_STORIES_PER_CLUSTER` (Default `2`).
+  - `worker/store.py`:
+    - neue inhaltliche Cluster-Key-Logik auf Basis von Titel+Summary.
+    - pro Sektor wird beim Persistieren die Anzahl ähnlicher Meldungen pro Cluster gezählt.
+    - wenn Cluster-Limit erreicht ist, wird Story mit Drop-Reason `duplicate_content_cluster` verworfen.
+- Grund:
+  - Gleiches Thema aus vielen Quellen sollte nicht mehrfach live erscheinen.
+- Erwarteter Effekt:
+  - Pro inhaltlichem Thema landen nur die besten 1-2 Stories im Live-Feed (default: 2).
+- Rollback-Hinweis:
+  - Cluster-Check in `worker/store.py` entfernen bzw. `MAX_SIMILAR_STORIES_PER_CLUSTER` erhöhen.
+
+### 2026-03-01 23:35:20 CET | Ingestion/Store (HTML-Artefakte aus Titeln/Summaries entfernt)
+- Änderung:
+  - `worker/utils.py`:
+    - `strip_html()` robuster gemacht (erst entity-decode, dann Tag-Strip, anschließend normalize).
+  - `worker/fetcher.py`:
+    - Feed-Titel werden beim Einlesen konsequent über `strip_html()` bereinigt.
+  - `worker/store.py`:
+    - Titel und Summary werden nach Übersetzung vor Persistierung zusätzlich per `strip_html()` bereinigt (Failsafe).
+- Grund:
+  - Verhindert sichtbare HTML-Artefakte wie `<a href=...>` im Dashboard.
+- Erwarteter Effekt:
+  - Keine HTML-Tags/Anchor-Reste mehr in Überschriften oder Zusammenfassungen.
+- Rollback-Hinweis:
+  - Änderungen in `worker/utils.py`, `worker/fetcher.py` und `worker/store.py` zurücksetzen.
+
+### 2026-03-01 23:42:10 CET | Web/API (Feedspot-Quellnamen auf Publisher normalisiert)
+- Änderung:
+  - `app/main.py`:
+    - neue Source-Name-Normalisierung für API/Template-Ausgabe.
+    - Feedspot-Präfixe wie `Feedspot Sustainability 09 (...)` werden entfernt.
+    - wenn nötig Fallback auf sauberen Publisher-Namen aus Domain (inkl. Overrides wie `nytimes.com -> The New York Times`).
+- Grund:
+  - Im UI sollen Publishernamen erscheinen, nicht Feedspot-Label.
+- Erwarteter Effekt:
+  - Metazeile zeigt konsistent Herausgeber wie `Mallorca Zeitung`, `The New York Times` statt `Feedspot ...`.
+- Rollback-Hinweis:
+  - Source-Name-Normalisierung in `app/main.py` entfernen.

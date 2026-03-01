@@ -444,8 +444,10 @@
         const cards = Array.from(document.querySelectorAll(".story-card[data-score]"));
         cards.forEach((card) => {
           const rawScore = Number(card.dataset.score || 0);
-          const scaled = Math.max(1, Math.min(10, (rawScore / 4.4) * 10));
+          const scaled = Math.max(1, Math.min(10, rawScore));
+          const step = Math.max(1, Math.min(10, Math.round(scaled)));
           card.dataset.relevance = rawScore.toFixed(2);
+          card.dataset.relevanceStep = String(step);
 
           let tier = "verylow";
           if (scaled >= 9) tier = "critical";
