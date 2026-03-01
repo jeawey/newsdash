@@ -1,12 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 
 import pytz
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
+from sqlalchemy import select
 
 from app.database import SessionLocal
-from app.models import Base
+from app.models import Base, JobRun
 from app.database import engine
 from app.settings import get_settings
 from worker.config import load_source_config
@@ -22,6 +23,23 @@ logger = logging.getLogger(__name__)
 
 def run_pipeline(run_type: str) -> None:
     db = SessionLocal()
+    now_utc = datetime.now(pytz.utc)
+    running_cutoff = now_utc - timedelta(minutes=45)
+    active_run = db.execute(
+        select(JobRun.id).where(
+            JobRun.status == "running",
+            JobRun.started_at >= running_cutoff,
+        )
+    ).first()
+    if active_run is not None:
+        logger.warning(
+            "Skipping run_type=%s because another run is already active (job_run_id=%s)",
+            run_type,
+            active_run[0],
+        )
+        db.close()
+        return
+
     logger = RunLogger(db, run_type)
 
     try:

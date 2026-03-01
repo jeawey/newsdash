@@ -15,6 +15,7 @@ from worker.utils import build_summary, extract_domain, google_news_rss_url
 _RSS_VERZEICHNIS_HOST = "www.rss-verzeichnis.de"
 _RSS_HINT_RE = re.compile(r"RSS-Feed-URL.*?href=[\"']([^\"']+)[\"']", re.IGNORECASE | re.DOTALL)
 _HREF_RE = re.compile(r"href=[\"']([^\"']+)[\"']", re.IGNORECASE)
+_FEED_FETCH_TIMEOUT_SECONDS = 8
 
 _SECTOR_DEFAULT_SUBTOPIC: dict[str, str] = {
     "Sustainability": "Global Regulations",
@@ -178,6 +179,17 @@ def _resolve_direct_feed_url(raw_url: str) -> str:
     return raw_url
 
 
+def _parse_feed_with_timeout(url: str) -> feedparser.FeedParserDict:
+    try:
+        req = Request(url, headers={"User-Agent": "newsdash-worker/1.0"})
+        with urlopen(req, timeout=_FEED_FETCH_TIMEOUT_SECONDS) as resp:
+            payload = resp.read()
+        return feedparser.parse(payload)
+    except Exception:
+        # Return empty feed on fetch/parse errors so one bad source can't block the whole run.
+        return feedparser.parse(b"")
+
+
 def _infer_sector_from_content(
     *,
     base_sector: str,
@@ -319,7 +331,7 @@ def fetch_all_stories(config: SourceConfig) -> list[RawStory]:
     for query in iter_queries(config):
         lang, region = locale_for_sector(query.sector)
         feed_url = google_news_rss_url(query.query, lang=lang, region=region)
-        feed = feedparser.parse(feed_url)
+        feed = _parse_feed_with_timeout(feed_url)
 
         for entry in feed.entries:
             story = _to_story(query, entry, config.excluded_domains)
@@ -330,7 +342,7 @@ def fetch_all_stories(config: SourceConfig) -> list[RawStory]:
         resolved_url = _resolve_direct_feed_url(feed_cfg.url)
         if not resolved_url:
             continue
-        feed = feedparser.parse(resolved_url)
+        feed = _parse_feed_with_timeout(resolved_url)
         for entry in feed.entries:
             story = _to_story_from_feed(feed_cfg, entry, config.excluded_domains)
             if story is not None:
