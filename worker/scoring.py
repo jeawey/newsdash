@@ -117,15 +117,37 @@ _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
         "anthropic",
         "claude",
         "perplexity",
+        "deepmind",
+        "frontier model",
+        "model release",
+        "new model",
+        "open weights",
         "model",
         "ceo",
         "hiring",
+        "appointed",
+        "resigns",
+        "chief scientist",
+        "head of research",
         "launch",
         "ai act",
         "regulation",
+        "executive order",
+        "export controls",
         "inference",
+        "eval",
+        "evaluation",
+        "safety",
+        "alignment",
         "datacenter",
         "gpu",
+        "compute",
+        "chip",
+        "nvidia",
+        "water cooling",
+        "funding",
+        "acquisition",
+        "merger",
         "copilot",
         "benchmark",
         "open source",
@@ -133,8 +155,16 @@ _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
     ),
     "Crypto": (
         "crash",
+        "surge",
+        "soars",
+        "rallies",
+        "plunge",
+        "sell-off",
+        "volatility",
         "liquidation",
+        "liquidations",
         "altcoin",
+        "memecoin",
         "etf",
         "tariff",
         "regulation",
@@ -144,7 +174,17 @@ _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
         "custody",
         "hack",
         "exploit",
+        "rug pull",
+        "insider trading",
+        "market manipulation",
+        "wash trading",
+        "front-running",
+        "charges",
+        "sec",
+        "doj",
         "bridge",
+        "exchange outage",
+        "proof of reserves",
         "treasury",
         "institutional",
     ),
@@ -162,6 +202,19 @@ _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
         "crispr",
         "diagnostics",
         "medtech",
+        "fermentation",
+        "biomanufacturing",
+        "biosurfactant",
+        "biofilm",
+        "inoculant",
+        "biostimulant",
+        "soil microbiome",
+        "scale-up",
+        "pilot plant",
+        "qa",
+        "qc",
+        "regulatory",
+        "zulassung",
     ),
     "Sustainability": (
         "regulation",
@@ -179,83 +232,213 @@ _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
         "circular economy",
         "recycling",
         "grid",
+        "water reuse",
+        "wastewater",
+        "sludge",
+        "scope 3",
+        "supply chain",
+        "climate adaptation",
+        "drought",
+        "water scarcity",
+        "pfas",
+        "non-toxic",
+        "procurement",
+        "tender",
+        "grant",
+        "rfp",
     ),
     "Cannabis": (
         "legalization",
+        "legalisierung",
         "hempcrete",
         "hempwood",
         "social club",
+        "club social",
         "germany",
         "spain",
         "medical cannabis",
+        "cannabis medicinal",
         "license",
+        "lizenz",
+        "gmp",
+        "gacp",
+        "testing",
+        "contamination",
         "hemp",
+        "hanf",
         "parliament",
+        "court ruling",
+        "taxation",
     ),
     "Hamburg": (
         "hamburg",
+        "hh",
         "senat",
         "buergerschaft",
+        "bezirksamt",
+        "hafencity",
+        "altona",
+        "eimsbuettel",
+        "wandsbek",
+        "harburg",
+        "bergedorf",
         "event",
         "veranstaltung",
         "verkehr",
         "hafen",
+        "port",
+        "terminal",
+        "logistik",
         "ausschreibung",
         "vergabe",
+        "rahmenvertrag",
+        "auftrag",
+        "zuschlag",
         "neubau",
         "zweckentfremdung",
         "airbnb",
         "hotel",
+        "facility management",
+        "reinigung",
+        "hygiene",
+        "abwasser",
+        "fettabscheider",
         "st pauli",
         "kiez",
+        "reperbahn",
+        "streik",
+        "ausfall",
+        "störung",
+        "ueberschwemmung",
     ),
     "Mallorca": (
         "mallorca",
+        "illes balears",
         "balearen",
         "palma",
         "consell",
         "tourismus",
+        "ocupacion",
+        "temporada",
         "event",
         "gesetz",
         "licitacion",
+        "concurso",
+        "adjudicacion",
+        "pliego",
         "obra nueva",
         "licencia vacacional",
         "alquiler turistico",
         "airbnb",
         "apertura hotel",
+        "housekeeping",
+        "lavanderia",
+        "cocina",
         "sostenibilidad",
+        "sequia",
+        "restriccion",
+        "reutilizacion",
+        "depuradora",
+        "aguas residuales",
+        "lodos",
         "costa este",
         "manacor",
+        "cala millor",
+        "sa coma",
+        "son servera",
+        "arta",
+        "capdepera",
     ),
     "Kenya": (
+        "kenya",
         "parliament",
         "agriculture",
         "mount kenya",
         "startup",
         "policy",
         "nairobi",
+        "mombasa",
+        "kisumu",
+        "nakuru",
+        "eldoret",
         "procurement",
         "tender",
+        "rfp",
+        "ifb",
+        "eoi",
+        "award",
+        "grant",
+        "donor-funded",
         "infrastructure",
         "cbk",
+        "wasreb",
+        "kebs",
+        "nema",
+        "kpa",
         "inflation",
         "transport",
         "energy project",
+        "water",
+        "wastewater",
+        "wwtp",
+        "sludge",
+        "sanitation",
+        "non-revenue water",
+        "leak",
+        "metering",
+        "drought",
+        "biofilm",
+        "odor",
+        "grease trap",
+        "industrial effluent",
+        "soil health",
+        "humus",
+        "regenerative",
+        "biostimulant",
+        "irrigation",
+        "coffee",
+        "tea",
+        "avocado",
+        "horticulture",
+        "cooperative",
+        "hotel",
+        "resort",
+        "lodge",
+        "facility management",
+        "housekeeping",
+        "laundry",
+        "kitchen",
+        "drain",
+        "partnership",
+        "joint venture",
+        "expansion",
+        "power outage",
+        "blackout",
     ),
     "Politics": (
         "sanctions",
+        "sanktionen",
         "ceasefire",
         "summit",
         "tariff",
         "election",
         "war",
         "negotiation",
+        "public procurement",
+        "subsidy",
+        "water policy",
+        "fertilizer policy",
+        "infrastructure bill",
+        "ppp",
         "export controls",
         "security doctrine",
         "defense aid",
         "coalition",
         "parliament vote",
         "trade policy",
+        "ban",
+        "lawsuit",
+        "investigation",
     ),
     "Frequenzen": (
         "spectrum",
@@ -293,6 +476,36 @@ _CONSTRUCTIVE_LENS_WEIGHTS: dict[str, float] = {
     "procurement": 1.2,
     "tender": 1.2,
     "ausschreibung": 1.2,
+}
+
+_STRATEGIC_RELEVANCE_WEIGHTS: dict[str, float] = {
+    "trade policy": 1.2,
+    "export controls": 1.2,
+    "public procurement": 1.2,
+    "procurement": 1.1,
+    "tender": 1.1,
+    "rfp": 1.0,
+    "grant": 1.0,
+    "infrastructure": 1.0,
+    "water restriction": 1.1,
+    "fertilizer subsidy": 1.0,
+    "shipping lane": 1.0,
+    "port disruption": 1.2,
+    "blackout": 1.0,
+}
+
+_SUBTOPIC_BOOSTS: dict[tuple[str, str], float] = {
+    ("Hamburg", "Ausschreibungen & Vergaben"): 0.24,
+    ("Hamburg", "Wirtschaft & Stadtleben"): 0.12,
+    ("Mallorca", "Ausschreibungen & Vergaben"): 0.24,
+    ("Mallorca", "Wirtschaft & Tourismus"): 0.12,
+    ("Kenya", "Infrastructure & Public Projects"): 0.20,
+    ("Kenya", "Business & Markets"): 0.10,
+    ("Sustainability", "Global Regulations"): 0.10,
+    ("Sustainability", "Energy Transition"): 0.10,
+    ("Biotechnologie", "Regulatory & Safety"): 0.10,
+    ("Biotechnologie", "Biotech Breakthroughs"): 0.10,
+    ("Cannabis", "Legalization Tracker"): 0.10,
 }
 
 _NOISE_PENALTY_WEIGHTS: dict[str, float] = {
@@ -377,12 +590,16 @@ def _sector_keyword_boost(sector: str, title: str, summary: str) -> tuple[float,
     return max(0.0, min(raw / 8.0, 1.2)), matches
 
 
-def _constructive_lens_boost(title: str, summary: str) -> tuple[float, list[tuple[str, float]], list[tuple[str, float]], float]:
+def _constructive_lens_boost(
+    title: str, summary: str
+) -> tuple[float, list[tuple[str, float]], list[tuple[str, float]], float]:
     text = _norm_text(title, summary)
     lens_raw, lens_hits = _weighted_hits(text, _CONSTRUCTIVE_LENS_WEIGHTS)
     noise_raw, noise_hits = _weighted_hits(text, _NOISE_PENALTY_WEIGHTS)
+    strategic_raw, _ = _weighted_hits(text, _STRATEGIC_RELEVANCE_WEIGHTS)
     raw = lens_raw + noise_raw
-    return max(-0.6, min(raw * 0.22, 0.8)), lens_hits, noise_hits, lens_raw
+    relevance_signal = lens_raw + strategic_raw
+    return max(-0.6, min(raw * 0.22, 0.8)), lens_hits, noise_hits, relevance_signal
 
 
 def _editorial_adjustment(story: RawStory) -> float:
@@ -402,13 +619,17 @@ def _editorial_adjustment(story: RawStory) -> float:
     return adjustment
 
 
-def _impact_score(story: RawStory, constructive_core_signal: float) -> float:
+def _impact_score(story: RawStory, relevance_signal: float) -> float:
     text = _norm_text(story.title, story.summary)
     hits = _term_hits(text, _HIGH_IMPACT_TERMS)
     base = min(hits * 0.12, 0.6)
-    if constructive_core_signal <= 0.0:
+    if relevance_signal <= 0.0:
         return min(base, 0.12)
     return base
+
+
+def _subtopic_boost(sector: str, subtopic: str) -> float:
+    return _SUBTOPIC_BOOSTS.get((sector, subtopic), 0.0)
 
 
 def _semantic_tokens(story: RawStory) -> set[str]:
@@ -458,6 +679,7 @@ def _log_score_explainer(candidates: list[dict[str, Any]], *, limit: int) -> Non
             f"kw={entry['keyword_weight']:.3f}",
             f"edit={entry['editorial_weight']:.3f}",
             f"impact={entry['impact_weight']:.3f}",
+            f"subtopic={entry['subtopic_weight']:.3f}",
             f"sector_hits={[term for term, _ in entry['sector_hits'][:4]]}",
             f"lens_hits={[term for term, _ in entry['lens_hits'][:4]]}",
             f"noise_hits={[term for term, _ in entry['noise_hits'][:4]]}",
@@ -486,10 +708,11 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
         domain_weight = trusted_domains.get(best.source_domain, 1.0)
         mention_weight = min(math.log2(mention_count + 1) * 1.8, 4.0)
         sector_kw, sector_hits = _sector_keyword_boost(sector, best.title, best.summary)
-        lens_kw, lens_hits, noise_hits, core_signal = _constructive_lens_boost(best.title, best.summary)
+        lens_kw, lens_hits, noise_hits, relevance_signal = _constructive_lens_boost(best.title, best.summary)
         keyword_weight = sector_kw + lens_kw
         editorial_weight = _editorial_adjustment(best)
-        impact_weight = _impact_score(best, core_signal)
+        impact_weight = _impact_score(best, relevance_signal)
+        subtopic_weight = _subtopic_boost(best.sector, best.subtopic)
 
         heat_score = mention_weight + recency
         base_score = (
@@ -499,6 +722,7 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
             + (keyword_weight * 0.22)
             + editorial_weight
             + impact_weight
+            + subtopic_weight
         )
         base_score = max(base_score, 0.0)
 
@@ -514,6 +738,7 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
                 "keyword_weight": keyword_weight,
                 "editorial_weight": editorial_weight,
                 "impact_weight": impact_weight,
+                "subtopic_weight": subtopic_weight,
                 "sector_hits": sector_hits,
                 "lens_hits": lens_hits,
                 "noise_hits": noise_hits,

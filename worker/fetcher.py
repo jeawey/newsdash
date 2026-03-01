@@ -1,3 +1,4 @@
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
@@ -45,6 +46,22 @@ _SECTOR_DEFAULT_SUBTOPIC: dict[str, str] = {
     "Mallorca": "Wirtschaft & Tourismus",
     "Kenya": "Politics",
     "Politics": "Global Power Moves",
+}
+
+_QUERY_SECTOR_MIN_FLOORS: dict[str, int] = {
+    "Sustainability": 70,
+    "Biotechnologie": 70,
+    "Cannabis": 50,
+}
+
+_DIRECT_SECTOR_MIN_FLOORS: dict[str, int] = {
+    "Sustainability": 45,
+    "Biotechnologie": 45,
+    "Cannabis": 35,
+}
+
+_DIRECT_SECTOR_MAX_SHARE: dict[str, float] = {
+    "Politics": 0.45,
 }
 
 _SECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -235,6 +252,61 @@ _HAMBURGER_FOOD_TERMS: tuple[str, ...] = (
     "restaurantkette",
 )
 
+_POLITICS_PRIORITY_TERMS: tuple[str, ...] = (
+    "war",
+    "krieg",
+    "conflict",
+    "konflikt",
+    "attack",
+    "angriff",
+    "invasion",
+    "ceasefire",
+    "waffenstillstand",
+    "sanction",
+    "sanktion",
+    "diplomacy",
+    "military",
+    "defense",
+    "verteidigung",
+    "tariff",
+    "export controls",
+    "missile",
+    "rakete",
+    "navy",
+)
+
+_POLITICS_GEO_ANCHORS: tuple[str, ...] = (
+    "iran",
+    "israel",
+    "gaza",
+    "ukraine",
+    "russia",
+    "russland",
+    "china",
+    "taiwan",
+    "usa",
+    "united states",
+    "eu",
+    "european union",
+    "nato",
+    "un ",
+    "middle east",
+)
+
+_POLITICS_LOW_SIGNAL_TERMS: tuple[str, ...] = (
+    "voter day",
+    "voters day",
+    "campaign",
+    "municipal",
+    "local election",
+    "by-election",
+    "opinion",
+    "editorial",
+    "sports",
+    "festival",
+    "celebrity",
+)
+
 _LOCAL_SUBTOPIC_KEYWORDS: dict[str, dict[str, tuple[str, ...]]] = {
     "Hamburg": {
         "Lokale Politik & Gesetze": ("senat", "bürgerschaft", "gesetz", "verordnung", "bezirk", "wahl", "polit"),
@@ -317,6 +389,20 @@ def _is_hamburg_local_story(text: str) -> bool:
             return False
 
     return True
+
+
+def _is_high_signal_politics_story(text: str) -> bool:
+    priority_hits = _term_hits(text, _POLITICS_PRIORITY_TERMS)
+    geo_hits = _term_hits(text, _POLITICS_GEO_ANCHORS)
+    low_signal_hits = _term_hits(text, _POLITICS_LOW_SIGNAL_TERMS)
+
+    if priority_hits >= 2:
+        return True
+    if priority_hits >= 1 and geo_hits >= 1:
+        return True
+    if low_signal_hits > 0 and priority_hits == 0:
+        return False
+    return False
 
 
 def _classify_sector_and_subtopic(*, base_sector: str, title: str, summary: str, url: str, source_name: str) -> tuple[str, str]:
@@ -504,6 +590,8 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
             text,
             _SECTOR_DEFAULT_SUBTOPIC[inferred_sector],
         )
+    if inferred_sector == "Politics" and not _is_high_signal_politics_story(text):
+        return None
     published_at = _parse_published(entry)
 
     return RawStory(
@@ -545,6 +633,8 @@ def _to_story_from_feed(feed_cfg: DirectFeedConfig, entry: dict, excluded_domain
     )
     text = f"{title} {summary} {url}".lower()
     if inferred_sector == "Hamburg" and not _is_hamburg_local_story(text):
+        return None
+    if inferred_sector == "Politics" and not _is_high_signal_politics_story(text):
         return None
     if inferred_sector == feed_cfg.sector:
         inferred_subtopic = feed_cfg.subtopic
@@ -602,6 +692,84 @@ def _stories_from_direct_feed(feed_cfg: DirectFeedConfig, config: SourceConfig) 
     return stories
 
 
+def _build_sector_limits(
+    *,
+    budget: int,
+    sector_task_counts: dict[str, int],
+    min_floors: dict[str, int] | None = None,
+    max_share_caps: dict[str, float] | None = None,
+) -> dict[str, int]:
+    if budget <= 0 or not sector_task_counts:
+        return {}
+    min_floors = min_floors or {}
+    max_share_caps = max_share_caps or {}
+
+    total_tasks = sum(max(count, 0) for count in sector_task_counts.values())
+    if total_tasks <= 0:
+        return {sector: 0 for sector in sector_task_counts}
+
+    limits: dict[str, int] = {}
+    for sector, count in sector_task_counts.items():
+        proportional = int((budget * count) / total_tasks)
+        limits[sector] = max(1, proportional)
+
+    # Enforce floors for strategically important sectors.
+    for sector, floor in min_floors.items():
+        if sector in limits:
+            limits[sector] = min(budget, max(limits[sector], floor))
+
+    # Enforce max shares for dominant sectors (e.g., Politics direct feeds).
+    for sector, share in max_share_caps.items():
+        if sector in limits:
+            cap = max(1, int(budget * max(0.0, min(1.0, share))))
+            limits[sector] = min(limits[sector], cap)
+
+    total_limits = sum(limits.values())
+    if total_limits <= budget:
+        return limits
+
+    # Scale down non-floor sectors first until total fits budget.
+    protected = {sector for sector in limits if limits[sector] <= min_floors.get(sector, 0)}
+    overflow = total_limits - budget
+    adjustable = [sector for sector in limits if sector not in protected]
+    idx = 0
+    while overflow > 0 and adjustable:
+        sector = adjustable[idx % len(adjustable)]
+        floor = min_floors.get(sector, 1)
+        if limits[sector] > floor:
+            limits[sector] -= 1
+            overflow -= 1
+        idx += 1
+        if idx > len(adjustable) * budget:
+            break
+    return limits
+
+
+def _partition_stories_with_sector_limits(
+    stories: list[RawStory],
+    *,
+    remaining_for_kind: int,
+    sector_limits: dict[str, int],
+    accepted_by_sector: dict[str, int],
+) -> tuple[list[RawStory], list[RawStory]]:
+    if remaining_for_kind <= 0:
+        return [], stories
+    accepted: list[RawStory] = []
+    rejected: list[RawStory] = []
+    for story in stories:
+        if len(accepted) >= remaining_for_kind:
+            rejected.append(story)
+            continue
+        sector = story.sector
+        sector_limit = sector_limits.get(sector, remaining_for_kind)
+        if accepted_by_sector[sector] >= sector_limit:
+            rejected.append(story)
+            continue
+        accepted.append(story)
+        accepted_by_sector[sector] += 1
+    return accepted, rejected
+
+
 def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None = None) -> list[RawStory]:
     collected_queries: list[RawStory] = []
     collected_direct: list[RawStory] = []
@@ -621,6 +789,27 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
     if query_count == 0 and direct_budget < max_raw:
         direct_budget = max_raw
         query_budget = 0
+
+    query_task_counts: dict[str, int] = defaultdict(int)
+    for query in config.queries:
+        query_task_counts[query.sector] += 1
+    direct_task_counts: dict[str, int] = defaultdict(int)
+    for feed in config.direct_feeds:
+        direct_task_counts[feed.sector] += 1
+
+    query_sector_limits = _build_sector_limits(
+        budget=query_budget,
+        sector_task_counts=query_task_counts,
+        min_floors=_QUERY_SECTOR_MIN_FLOORS,
+    )
+    direct_sector_limits = _build_sector_limits(
+        budget=direct_budget,
+        sector_task_counts=direct_task_counts,
+        min_floors=_DIRECT_SECTOR_MIN_FLOORS,
+        max_share_caps=_DIRECT_SECTOR_MAX_SHARE,
+    )
+    accepted_query_by_sector: dict[str, int] = defaultdict(int)
+    accepted_direct_by_sector: dict[str, int] = defaultdict(int)
 
     def _time_left() -> float:
         if max_runtime is None:
@@ -654,8 +843,12 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
             if kind == "query":
                 remaining_for_kind = query_budget - len(collected_queries)
                 if remaining_for_kind > 0:
-                    accepted = stories[:remaining_for_kind]
-                    rejected = stories[remaining_for_kind:]
+                    accepted, rejected = _partition_stories_with_sector_limits(
+                        stories,
+                        remaining_for_kind=remaining_for_kind,
+                        sector_limits=query_sector_limits,
+                        accepted_by_sector=accepted_query_by_sector,
+                    )
                     collected_queries.extend(accepted)
                     overflow_queries.extend(rejected)
                 else:
@@ -663,8 +856,12 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
             else:
                 remaining_for_kind = direct_budget - len(collected_direct)
                 if remaining_for_kind > 0:
-                    accepted = stories[:remaining_for_kind]
-                    rejected = stories[remaining_for_kind:]
+                    accepted, rejected = _partition_stories_with_sector_limits(
+                        stories,
+                        remaining_for_kind=remaining_for_kind,
+                        sector_limits=direct_sector_limits,
+                        accepted_by_sector=accepted_direct_by_sector,
+                    )
                     collected_direct.extend(accepted)
                     overflow_direct.extend(rejected)
                 else:
@@ -723,5 +920,7 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
         len(collected_queries),
         len(collected_direct),
     )
+    logger.warning("Fetch sector split (query): %s", dict(sorted(accepted_query_by_sector.items())))
+    logger.warning("Fetch sector split (direct): %s", dict(sorted(accepted_direct_by_sector.items())))
 
     return collected

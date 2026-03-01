@@ -177,6 +177,61 @@ _HAMBURG_REJECT_TERMS: tuple[str, ...] = (
     "patty",
 )
 
+_POLITICS_PRIORITY_TERMS: tuple[str, ...] = (
+    "war",
+    "krieg",
+    "conflict",
+    "konflikt",
+    "attack",
+    "angriff",
+    "invasion",
+    "ceasefire",
+    "waffenstillstand",
+    "sanction",
+    "sanktion",
+    "diplomacy",
+    "military",
+    "defense",
+    "verteidigung",
+    "tariff",
+    "export controls",
+    "missile",
+    "rakete",
+    "navy",
+)
+
+_POLITICS_GEO_ANCHORS: tuple[str, ...] = (
+    "iran",
+    "israel",
+    "gaza",
+    "ukraine",
+    "russia",
+    "russland",
+    "china",
+    "taiwan",
+    "usa",
+    "united states",
+    "eu",
+    "european union",
+    "nato",
+    "un ",
+    "middle east",
+)
+
+_POLITICS_LOW_SIGNAL_TERMS: tuple[str, ...] = (
+    "voter day",
+    "voters day",
+    "campaign",
+    "municipal",
+    "local election",
+    "by-election",
+    "opinion",
+    "editorial",
+    "sports",
+    "festival",
+    "celebrity",
+)
+
 
 def _count_sector_hits(sector: str, text: str) -> int:
     terms = _SECTOR_RELEVANCE_TERMS.get(sector, ())
@@ -197,6 +252,20 @@ def _count_sector_hits(sector: str, text: str) -> int:
     return hits
 
 
+def _is_high_signal_politics_story(text: str) -> bool:
+    priority_hits = sum(1 for term in _POLITICS_PRIORITY_TERMS if term in text)
+    geo_hits = sum(1 for term in _POLITICS_GEO_ANCHORS if term in text)
+    low_signal_hits = sum(1 for term in _POLITICS_LOW_SIGNAL_TERMS if term in text)
+
+    if priority_hits >= 2:
+        return True
+    if priority_hits >= 1 and geo_hits >= 1:
+        return True
+    if low_signal_hits > 0 and priority_hits == 0:
+        return False
+    return False
+
+
 def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
     if not enabled:
         return True
@@ -209,6 +278,8 @@ def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
     if story.sector == "Hamburg":
         if any(term in text for term in _HAMBURG_REJECT_TERMS):
             return False
+    if story.sector == "Politics":
+        return _is_high_signal_politics_story(text)
     return _count_sector_hits(story.sector, text) >= required
 
 
@@ -221,6 +292,8 @@ def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, e
     if sector == "Hamburg":
         if any(term in text for term in _HAMBURG_REJECT_TERMS):
             return False
+    if sector == "Politics":
+        return _is_high_signal_politics_story(text)
     required = _SECTOR_MIN_HITS.get(sector, 1)
     return _count_sector_hits(sector, text) >= required
 
