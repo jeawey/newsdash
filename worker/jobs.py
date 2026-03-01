@@ -40,7 +40,7 @@ def run_pipeline(run_type: str) -> None:
         db.close()
         return
 
-    logger = RunLogger(db, run_type)
+    run_logger = RunLogger(db, run_type)
 
     try:
         source_config = load_source_config()
@@ -54,9 +54,9 @@ def run_pipeline(run_type: str) -> None:
             breaking = [s for s in inserted if s.heat_score >= settings.hourly_breaking_threshold]
             send_digest(breaking, title="Breaking Sector Updates")
 
-        logger.finish("success", f"inserted={len(inserted)}")
+        run_logger.finish("success", f"inserted={len(inserted)}")
     except Exception as exc:  # noqa: BLE001
-        logger.finish("failed", str(exc))
+        run_logger.finish("failed", str(exc))
         raise
     finally:
         db.close()
