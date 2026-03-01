@@ -183,14 +183,14 @@ _SECTOR_MIN_SOCIAL_STORY_SCORE: dict[str, float] = {
     "AI": 2.4,
     "Sustainability": 2.4,
     "Cannabis": 2.2,
-    "Frequenzen": 2.0,
+    "Frequenzen": 1.8,
 }
 
 _SECTOR_MIN_SOCIAL_MENTIONS: dict[str, int] = {
     "AI": 2,
     "Sustainability": 2,
     "Cannabis": 2,
-    "Frequenzen": 2,
+    "Frequenzen": 1,
 }
 
 _HAMBURG_REJECT_TERMS: tuple[str, ...] = (

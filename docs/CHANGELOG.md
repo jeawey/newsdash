@@ -506,3 +506,15 @@ Für jeden Eintrag:
   - Mehr `Frequenzen`-Stories passieren die Store-Score-Hürde.
 - Rollback-Hinweis:
   - Wert in `worker/store.py` wieder auf `0.25` setzen.
+
+### 2026-03-01 22:33:10 CET | Final Tweaks (Frequenzen Social Thresholds)
+- Änderung:
+  - `worker/store.py`:
+    - `Frequenzen` Social-Score-Schwelle gesenkt: `min_social_story_score 2.0 -> 1.8`.
+    - `Frequenzen` Social-Mentions-Schwelle gesenkt: `min_social_mentions 2 -> 1`.
+- Grund:
+  - Letzter dominanter Drop-Grund in `Frequenzen` war `min_social_story_score`/`min_social_mentions`.
+- Erwarteter Effekt:
+  - Mehr `Frequenzen`-Stories passieren den Social-Filter und werden im Store berücksichtigt.
+- Rollback-Hinweis:
+  - Werte in `worker/store.py` auf `2.0` bzw. `2` zurücksetzen.
