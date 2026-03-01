@@ -206,6 +206,17 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `worker/scoring.py` zurücknehmen.
 
+### 2026-03-01 20:53:14 Europe/Madrid | Config (Sustainability Feedspot RSS Integration)
+- Änderung:
+  - Zusätzliche direkte Sustainability-RSS-Quellen aus der Feedspot-Liste integriert (23 neue `direct_feeds` Einträge).
+  - Quellen wurden unter `Sustainability` mit Subtopics `Global Regulations` und `Energy Transition` ergänzt.
+- Grund:
+  - Gewünscht war eine deutlich breitere Research-Abdeckung über konkrete Sustainability-RSS-Quellen statt reiner Scoring-Optimierung.
+- Erwarteter Effekt:
+  - Höhere Quellendiversität und mehr Rohstories im Sustainability-Sektor aus spezialisierten Nachhaltigkeits-Feeds.
+- Rollback-Hinweis:
+  - Ergänzten Block in `config/sources.yml` (Feedspot Sustainability 01-23) entfernen.
+
 ### 2026-03-01 14:22:00 Europe/Madrid | Web (UI/Theme)
 - Änderung:
   - Theme-Toggle von Text auf Sonne/Mond-Icon umgestellt (inkl. passender ARIA-Labels je Modus).
@@ -267,3 +278,73 @@ Für jeden Eintrag:
     - `worker/store.py`
     - `worker/translate.py`
     - `app/settings.py`
+
+### 2026-03-01 20:57:37 Europe/Madrid | Config (Feedspot Sustainability Top-100 RSS Integration)
+- Änderung:
+  - Feedspot Sustainability-Liste auf vollständige Top-100 erweitert.
+  - In `config/sources.yml` wurden die bisherigen Feedspot-Einträge (`01-23`) durch `Feedspot Sustainability 01-100` ersetzt.
+  - Alle 100 von Feedspot gelisteten RSS-URLs wurden als `direct_feeds` unter dem Sektor `Sustainability` eingetragen.
+- Grund:
+  - Anforderung war, nicht nur Scoring zu optimieren, sondern die Rohdaten-Basis für Sustainability maximal zu verbreitern.
+- Erwarteter Effekt:
+  - Deutlich höhere Source-Coverage im Fetch für Sustainability und damit mehr potenzielle Stories für Scoring/Insert.
+- Hinweis:
+  - Die Feedspot-Top-100 enthält laut gelisteter OPML mehrere URL-Duplikate (u. a. wiederholte `greenly.earth`-Feeds); diese wurden bewusst 1:1 übernommen, weil explizit "alle 100" gewünscht war.
+- Rollback-Hinweis:
+  - Block `Feedspot Sustainability 01-100` in `config/sources.yml` entfernen oder auf vorherigen 23er-Stand zurücksetzen.
+
+### 2026-03-01 21:15:40 Europe/Madrid | Config (Feedspot Cannabis Top-100 RSS Integration)
+- Änderung:
+  - Vollständige Feedspot-Liste `Top 100 Marijuana RSS Feeds` als `direct_feeds` unter `Cannabis` eingetragen.
+  - Neue Einträge in `config/sources.yml`: `Feedspot Cannabis 01-100`.
+  - Subtopic-Zuordnung für die neuen Feeds vorgenommen (`Legalization Tracker`, `Medical Cannabis`, `Industrial Hemp`, `Industry & Retail`, `Spain Germany Policy`, `Social Signal Watch`).
+- Grund:
+  - Anforderung war, alle 100 Cannabis-RSS-Feeds aus der präsentierten Feedspot-Seite in die Quellenkonfiguration zu übernehmen.
+- Erwarteter Effekt:
+  - Deutlich breitere Rohdatenabdeckung im Cannabis-Sektor bereits auf Fetch-Ebene (vor Scoring).
+- Hinweis:
+  - Bestehende Cannabis-Standardquellen (`Marijuana Moment`, `MJBizDaily`, `Reddit Trees`) bleiben zusätzlich aktiv.
+- Rollback-Hinweis:
+  - Block `Feedspot Cannabis 01-100` in `config/sources.yml` entfernen.
+
+### 2026-03-01 21:22:03 Europe/Madrid | Config (Feedspot Kenya RSS Integration)
+- Änderung:
+  - 46 per MCP extrahierte Kenya-RSS-Links aus der Feedspot-Seite in `direct_feeds` eingetragen.
+  - Neue Einträge in `config/sources.yml`: `Feedspot Kenya 01-46` unter `sector: "Kenya"`.
+  - Einträge auf vorhandene Kenya-Subtopics verteilt (`Politics`, `Agriculture & Mount Kenya`, `Startup Ecosystem`, `Infrastructure & Public Projects`, `Business & Markets`, `Social Signal Watch`).
+- Grund:
+  - Anforderung war, die extrahierten Kenya-Feed-URLs direkt als Quellen im Fetcher zu hinterlegen.
+- Erwarteter Effekt:
+  - Breitere Kenya-Coverage bereits im Fetch und mehr Kenya-Rohstories vor dem Scoring.
+- Hinweis:
+  - Bestehende Kenya-Basisquellen (`Nation Africa`, `Business Daily Africa`, `Reddit Kenya`) bleiben zusätzlich aktiv.
+- Rollback-Hinweis:
+  - Block `Feedspot Kenya 01-46` in `config/sources.yml` entfernen.
+
+### 2026-03-01 21:30:22 Europe/Madrid | Config (Feedspot Biotechnologie RSS Integration)
+- Änderung:
+  - 41 per MCP extrahierte Biotechnologie-RSS-Links aus Feedspot in `direct_feeds` eingetragen.
+  - Neue Einträge in `config/sources.yml`: `Feedspot Biotech 01-41` unter `sector: "Biotechnologie"`.
+  - Einträge auf bestehende Biotech-Subtopics verteilt (`Biotech Breakthroughs`, `Regulatory & Safety`, `Biotech Devices`, `Effective Microorganisms`, `Biotech Funding & M&A`, `Social Signal Watch`).
+- Grund:
+  - Anforderung war, die extrahierten Biotechnologie-RSS-Quellen direkt in `sources` zu ergänzen.
+- Erwarteter Effekt:
+  - Deutlich breitere Biotechnologie-Quellenabdeckung im Fetch vor dem Scoring.
+- Hinweis:
+  - Bereits vorhandene Biotechnologie-Basisquellen bleiben aktiv; dadurch gibt es bewusst teilweise URL-Überschneidungen.
+- Rollback-Hinweis:
+  - Block `Feedspot Biotech 01-41` in `config/sources.yml` entfernen.
+
+### 2026-03-01 21:40:10 Europe/Madrid | Config (Feedspot Crypto Top-100 RSS Integration)
+- Änderung:
+  - Alle 100 per MCP extrahierten Crypto-RSS-Links aus der Feedspot-Seite in `direct_feeds` eingetragen.
+  - Neue Einträge in `config/sources.yml`: `Feedspot Crypto 01-100` unter `sector: "Crypto"`.
+  - Subtopic-Zuordnung für die neuen Quellen vorgenommen (`Crashes & Volatility`, `Altcoin Analysis`, `Policy & Market Impact`, `Exchanges & Infrastructure`, `Social Signal Watch`).
+- Grund:
+  - Anforderung war, die vollständige Feedspot Top-100 Crypto-Liste direkt in `sources` zu übernehmen.
+- Erwarteter Effekt:
+  - Signifikant breitere Rohdatenabdeckung im Crypto-Sektor vor dem Scoring.
+- Hinweis:
+  - Bestehende Crypto-Basisquellen (`CoinDesk`, `Cointelegraph`, `Reddit CryptoCurrency`) bleiben aktiv; dadurch sind einzelne URL-Duplikate (z. B. Cointelegraph) bewusst vorhanden.
+- Rollback-Hinweis:
+  - Block `Feedspot Crypto 01-100` in `config/sources.yml` entfernen.
