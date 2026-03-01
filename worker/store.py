@@ -168,15 +168,29 @@ _SECTOR_MIN_HITS: dict[str, int] = {
 }
 
 _SECTOR_MIN_STORY_SCORE: dict[str, float] = {
-    "AI": 0.80,
+    "AI": 0.70,
     "Crypto": 0.80,
     "Biotechnologie": 0.55,
-    "Sustainability": 0.60,
-    "Frequenzen": 0.40,
-    "Kenya": 0.45,
-    "Cannabis": 0.55,
+    "Sustainability": 0.50,
+    "Frequenzen": 0.30,
+    "Kenya": 0.40,
+    "Cannabis": 0.45,
     "Mallorca": 0.70,
     "Hamburg": 0.70,
+}
+
+_SECTOR_MIN_SOCIAL_STORY_SCORE: dict[str, float] = {
+    "AI": 2.4,
+    "Sustainability": 2.4,
+    "Cannabis": 2.2,
+    "Frequenzen": 2.0,
+}
+
+_SECTOR_MIN_SOCIAL_MENTIONS: dict[str, int] = {
+    "AI": 2,
+    "Sustainability": 2,
+    "Cannabis": 2,
+    "Frequenzen": 2,
 }
 
 _HAMBURG_REJECT_TERMS: tuple[str, ...] = (
@@ -348,14 +362,14 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     expanded_domain_cap_sectors = {"AI", "Crypto", "Biotechnologie", "Frequenzen", "Cannabis", "Sustainability", "Kenya", "Mallorca", "Hamburg"}
     social_domains = {"x.com", "reddit.com", "linkedin.com", "substack.com"}
     sector_minimum_targets: dict[str, int] = {
-        "AI": 10,
+        "AI": 12,
         "Crypto": 10,
-        "Sustainability": 10,
+        "Sustainability": 12,
         "Biotechnologie": 10,
-        "Cannabis": 10,
-        "Frequenzen": 8,
+        "Cannabis": 12,
+        "Frequenzen": 10,
         "Politics": 8,
-        "Kenya": 8,
+        "Kenya": 10,
         "Hamburg": 8,
         "Mallorca": 10,
     }
@@ -419,9 +433,17 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             if story.score < min_story_score:
                 return False, "min_story_score"
             if story.source_domain in social_domains:
-                if story.score < settings.min_social_story_score:
+                min_social_story_score = _SECTOR_MIN_SOCIAL_STORY_SCORE.get(
+                    sector,
+                    settings.min_social_story_score,
+                )
+                min_social_mentions = _SECTOR_MIN_SOCIAL_MENTIONS.get(
+                    sector,
+                    settings.min_social_mentions,
+                )
+                if story.score < min_social_story_score:
                     return False, "min_social_story_score"
-                if story.mentions < settings.min_social_mentions:
+                if story.mentions < min_social_mentions:
                     return False, "min_social_mentions"
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)

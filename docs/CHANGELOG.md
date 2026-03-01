@@ -463,3 +463,19 @@ Für jeden Eintrag:
   - Gleichmäßigere sektorale Verteilung mit höherem Netto-Inserts in `Kenya`, `Frequenzen`, `Cannabis`, `Biotechnologie`, `Sustainability` sowie stabiler Versorgung in `AI`/`Crypto`.
 - Rollback-Hinweis:
   - Änderungen in `worker/scoring.py` und `worker/store.py` auf den vorherigen Stand zurücksetzen.
+
+### 2026-03-01 22:10:35 CET | Final Tweaks (Cannabis/Frequenzen/AI Throughput)
+- Änderung:
+  - `worker/scoring.py`:
+    - Freshness/Fallback für `Cannabis`, `Frequenzen`, `Kenya` weiter verlängert.
+    - sektorale Backfill-Ziele erhöht (`_SECTOR_MIN_SCORABLE_ITEMS`), besonders für `Cannabis` und `Frequenzen`.
+  - `worker/store.py`:
+    - sektor-spezifische Mindestscores weiter gesenkt/angepasst (`AI`, `Sustainability`, `Frequenzen`, `Kenya`, `Cannabis`).
+    - neue sektor-spezifische Social-Schwellen eingeführt (`_SECTOR_MIN_SOCIAL_STORY_SCORE`, `_SECTOR_MIN_SOCIAL_MENTIONS`).
+    - sektorale Mindest-Insert-Targets erhöht (`AI`, `Sustainability`, `Cannabis`, `Frequenzen`, `Kenya`).
+- Grund:
+  - Letzte Engpässe lagen primär bei `min_story_score` und Social-Filtern in `AI/Cannabis/Frequenzen`.
+- Erwarteter Effekt:
+  - Höhere Netto-Inserts in `Cannabis` und `Frequenzen`, stabilere `AI`-Zufuhr bei gleichbleibender Gesamtqualität.
+- Rollback-Hinweis:
+  - Änderungen in `worker/scoring.py` und `worker/store.py` auf den vorherigen Stand zurücksetzen.
