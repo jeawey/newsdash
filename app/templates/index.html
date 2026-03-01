@@ -270,6 +270,7 @@
             : (currentTopic === "all" || card.dataset.subtopic === currentTopic);
           const visible = matchesScope && matchesTopic;
           card.classList.toggle("is-hidden", !visible);
+          if (visible) card.classList.add("is-visible");
           if (visible) visibleTopCards += 1;
         });
 
@@ -293,6 +294,7 @@
           const storyCards = Array.from(panel.querySelectorAll(".sector-story"));
           if (storyCards.length === 0) {
             panel.classList.remove("is-hidden");
+            panel.classList.add("is-visible");
             if (topicEmpty) topicEmpty.classList.add("is-hidden");
             return;
           }
@@ -305,12 +307,15 @@
               : (currentTopic === "all" || card.dataset.subtopic === currentTopic);
             const visible = scopeVisible && topicVisible;
             card.classList.toggle("is-hidden", !visible);
+            if (visible) card.classList.add("is-visible");
             if (visible) visibleStories += 1;
           });
 
           panel.classList.remove("is-hidden");
+          panel.classList.add("is-visible");
           if (topicEmpty) {
             topicEmpty.classList.toggle("is-hidden", visibleStories > 0);
+            if (visibleStories === 0) topicEmpty.classList.add("is-visible");
           }
         });
       }
@@ -334,7 +339,7 @@
       function initRevealAnimations() {
         const revealTargets = Array.from(
           document.querySelectorAll(
-            ".hero, .scope-nav, .topic-nav, .top-section, .sector-panel, .relevance-legend, .story-card, .stat-pill"
+            ".hero, .scope-nav, .topic-nav, .top-section, .sector-panel, .relevance-legend, .stat-pill"
           )
         );
 
