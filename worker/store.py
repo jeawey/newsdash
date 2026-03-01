@@ -434,4 +434,13 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         if prune_ids:
             db.execute(delete(Story).where(Story.id.in_(prune_ids)))
     db.commit()
-    return inserted
+
+    # Some freshly inserted rows can be pruned by the hard per-sector cap above.
+    # Return only rows that still exist to avoid ObjectDeletedError downstream.
+    inserted_ids = [story.id for story in inserted if story.id is not None]
+    if not inserted_ids:
+        return []
+    existing_inserted = db.scalars(
+        select(Story).where(Story.id.in_(inserted_ids)).order_by(Story.score.desc(), Story.published_at.desc(), Story.id.desc())
+    ).all()
+    return existing_inserted

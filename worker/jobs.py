@@ -9,6 +9,7 @@ import pytz
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
+from sqlalchemy.orm.exc import ObjectDeletedError
 
 from app.database import SessionLocal
 from app.models import Base, JobRun
@@ -128,7 +129,13 @@ def run_pipeline(run_type: str) -> None:
             if run_type == "morning":
                 send_digest(inserted, title="Morning Sector Briefing")
             elif run_type == "hourly":
-                breaking = [s for s in inserted if s.heat_score >= settings.hourly_breaking_threshold]
+                breaking = []
+                for story in inserted:
+                    try:
+                        if story.heat_score >= settings.hourly_breaking_threshold:
+                            breaking.append(story)
+                    except ObjectDeletedError:
+                        logger.warning("Skipping deleted Story ORM instance while building breaking digest")
                 send_digest(breaking, title="Breaking Sector Updates")
 
             run_logger.finish("success", f"inserted={len(inserted)}")
