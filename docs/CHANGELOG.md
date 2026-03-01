@@ -416,3 +416,17 @@ Für jeden Eintrag:
   - Mehr scorable Kandidaten in bislang unterversorgten Sektoren (vor allem `Kenya`, `Sustainability`, `Biotechnologie`, `Cannabis`, `Frequenzen`) und klare Transparenz, warum Stories im Store verworfen oder gepruned werden.
 - Rollback-Hinweis:
   - Änderungen in `worker/scoring.py` und `worker/store.py` auf den vorherigen Stand zurücksetzen.
+
+
+### 2026-03-01 21:56:50 CET | Worker (Store Gate Relax + Sector Score Floors)
+- Änderung:
+  - `worker/store.py`:
+    - Hard-Relevance-Gate auf `Hamburg` und `Politics` begrenzt (für `Mallorca` und `Kenya` deaktiviert, um Over-Filtering zu reduzieren).
+    - sektor-spezifische Mindestscore-Schwellen eingeführt (`_SECTOR_MIN_STORY_SCORE`) statt globalem Einheitswert:
+      - `Biotechnologie=0.55`, `Sustainability=0.60`, `Frequenzen=0.55`, `Kenya=0.55`, `Cannabis=0.60`, `Mallorca=0.70`, `Hamburg=0.85`.
+- Grund:
+  - Aus den neuen Store-Drop-Logs: starke Drop-Last durch `hard_relevance_gate` (v. a. Mallorca/Kenya) und `min_story_score` in unterfüllten Sektoren.
+- Erwarteter Effekt:
+  - Mehr Netto-Inserts in bislang unterversorgten Sektoren ohne Politics/Hamburg-Qualitätsverlust.
+- Rollback-Hinweis:
+  - Änderungen in `worker/store.py` auf den vorherigen Stand zurücksetzen.

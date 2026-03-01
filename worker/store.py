@@ -167,6 +167,16 @@ _SECTOR_MIN_HITS: dict[str, int] = {
     "Politics": 1,
 }
 
+_SECTOR_MIN_STORY_SCORE: dict[str, float] = {
+    "Biotechnologie": 0.55,
+    "Sustainability": 0.60,
+    "Frequenzen": 0.55,
+    "Kenya": 0.55,
+    "Cannabis": 0.60,
+    "Mallorca": 0.70,
+    "Hamburg": 0.85,
+}
+
 _HAMBURG_REJECT_TERMS: tuple[str, ...] = (
     "hannover",
     "lübeck",
@@ -272,9 +282,9 @@ def _is_high_signal_politics_story(text: str) -> bool:
 def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
     if not enabled:
         return True
-    # Keep hard lexical gate strict for geo/politics rooms, but softer for global sectors
-    # to avoid underfilling categories when wording varies across languages/sources.
-    if story.sector not in {"Hamburg", "Mallorca", "Kenya", "Politics"}:
+    # Keep hard lexical gate only for rooms where we observed strong off-topic drift.
+    # Mallorca/Kenya are intentionally broader now to avoid over-filtering.
+    if story.sector not in {"Hamburg", "Politics"}:
         return True
     required = _SECTOR_MIN_HITS.get(story.sector, 1)
     text = f"{story.title} {story.summary}".lower()
@@ -289,7 +299,7 @@ def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
 def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, enabled: bool) -> bool:
     if not enabled:
         return True
-    if sector not in {"Hamburg", "Mallorca", "Kenya", "Politics"}:
+    if sector not in {"Hamburg", "Politics"}:
         return True
     text = f"{title} {summary}".lower()
     if sector == "Hamburg":
@@ -404,7 +414,8 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         ) -> tuple[bool, str | None]:
             if not _passes_hard_relevance_gate(story, settings.hard_relevance_gate_enabled):
                 return False, "hard_relevance_gate"
-            if story.score < settings.min_story_score:
+            min_story_score = _SECTOR_MIN_STORY_SCORE.get(sector, settings.min_story_score)
+            if story.score < min_story_score:
                 return False, "min_story_score"
             if story.source_domain in social_domains:
                 if story.score < settings.min_social_story_score:
