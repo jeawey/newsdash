@@ -37,6 +37,17 @@ Sectors covered:
   - includes `direct_feeds` for non-Google source diversity
 - `scripts/`: start scheduler and manual one-shot ingestion
 
+## Documentation Policy
+
+Für saubere Fehleranalyse und Rückverfolgung wird jetzt alles dokumentiert:
+- `docs/CHANGELOG.md`: technische Änderungen am Code/Config
+- `docs/WORKLOG.md`: operative Schritte (Deploy, Restart, Manual Runs, Recovery)
+- `docs/DOCUMENTATION_WORKFLOW.md`: verbindlicher Ablauf
+
+Schnell eintragen:
+- `bash scripts/log_entry.sh worklog "Titel" "Details"`
+- `bash scripts/log_entry.sh changelog "Titel" "Details"`
+
 ## Local run
 
 1. Create env file:

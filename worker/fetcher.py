@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import lru_cache
+import logging
 import re
+import time
 from typing import Optional
 from urllib.parse import urljoin, urlparse
 from urllib.request import Request, urlopen
@@ -8,15 +11,16 @@ from urllib.request import Request, urlopen
 import feedparser
 from dateutil import parser as date_parser
 
+from app.settings import get_settings
 from worker.config import DirectFeedConfig, QueryConfig, SourceConfig, iter_direct_feeds, iter_queries
-from worker.translate import translate_to_german
 from worker.types import RawStory
 from worker.utils import build_summary, extract_domain, google_news_rss_url
 
 _RSS_VERZEICHNIS_HOST = "www.rss-verzeichnis.de"
 _RSS_HINT_RE = re.compile(r"RSS-Feed-URL.*?href=[\"']([^\"']+)[\"']", re.IGNORECASE | re.DOTALL)
 _HREF_RE = re.compile(r"href=[\"']([^\"']+)[\"']", re.IGNORECASE)
-_FEED_FETCH_TIMEOUT_SECONDS = 8
+logger = logging.getLogger(__name__)
+settings = get_settings()
 _TZINFOS = {
     "UTC": timezone.utc,
     "GMT": timezone.utc,
@@ -402,7 +406,7 @@ def _resolve_direct_feed_url(raw_url: str) -> str:
 def _parse_feed_with_timeout(url: str) -> feedparser.FeedParserDict:
     try:
         req = Request(url, headers={"User-Agent": "newsdash-worker/1.0"})
-        with urlopen(req, timeout=_FEED_FETCH_TIMEOUT_SECONDS) as resp:
+        with urlopen(req, timeout=settings.feed_fetch_timeout_seconds) as resp:
             payload = resp.read()
         return feedparser.parse(payload)
     except Exception:
@@ -490,18 +494,16 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
             text,
             _SECTOR_DEFAULT_SUBTOPIC[inferred_sector],
         )
-    title_de = translate_to_german(title)
-    summary_de = translate_to_german(summary)
     published_at = _parse_published(entry)
 
     return RawStory(
         sector=inferred_sector,
         subtopic=inferred_subtopic,
-        title=title_de,
+        title=title,
         url=url,
         source_name=source_name,
         source_domain=source_domain,
-        summary=summary_de,
+        summary=summary,
         published_at=published_at,
     )
 
@@ -542,25 +544,21 @@ def _to_story_from_feed(feed_cfg: DirectFeedConfig, entry: dict, excluded_domain
             text,
             _SECTOR_DEFAULT_SUBTOPIC[inferred_sector],
         )
-    title_de = translate_to_german(title)
-    summary_de = translate_to_german(summary)
     published_at = _parse_published(entry)
 
     return RawStory(
         sector=inferred_sector,
         subtopic=inferred_subtopic,
-        title=title_de,
+        title=title,
         url=url,
         source_name=source_name,
         source_domain=source_domain,
-        summary=summary_de,
+        summary=summary,
         published_at=published_at,
     )
 
 
-def fetch_all_stories(config: SourceConfig) -> list[RawStory]:
-    collected: list[RawStory] = []
-
+def _stories_from_query(query: QueryConfig, config: SourceConfig) -> list[RawStory]:
     def locale_for_sector(sector: str) -> tuple[str, str]:
         if sector == "Hamburg":
             return ("de", "DE")
@@ -570,24 +568,110 @@ def fetch_all_stories(config: SourceConfig) -> list[RawStory]:
             return ("en", "KE")
         return ("en", "US")
 
-    for query in iter_queries(config):
-        lang, region = locale_for_sector(query.sector)
-        feed_url = google_news_rss_url(query.query, lang=lang, region=region)
-        feed = _parse_feed_with_timeout(feed_url)
+    lang, region = locale_for_sector(query.sector)
+    feed_url = google_news_rss_url(query.query, lang=lang, region=region)
+    feed = _parse_feed_with_timeout(feed_url)
+    stories: list[RawStory] = []
+    for entry in feed.entries[: settings.max_entries_per_feed]:
+        story = _to_story(query, entry, config.excluded_domains)
+        if story is not None:
+            stories.append(story)
+    return stories
 
-        for entry in feed.entries:
-            story = _to_story(query, entry, config.excluded_domains)
-            if story is not None:
-                collected.append(story)
 
-    for feed_cfg in iter_direct_feeds(config):
-        resolved_url = _resolve_direct_feed_url(feed_cfg.url)
-        if not resolved_url:
-            continue
-        feed = _parse_feed_with_timeout(resolved_url)
-        for entry in feed.entries:
-            story = _to_story_from_feed(feed_cfg, entry, config.excluded_domains)
-            if story is not None:
-                collected.append(story)
+def _stories_from_direct_feed(feed_cfg: DirectFeedConfig, config: SourceConfig) -> list[RawStory]:
+    resolved_url = _resolve_direct_feed_url(feed_cfg.url)
+    if not resolved_url:
+        return []
+    feed = _parse_feed_with_timeout(resolved_url)
+    stories: list[RawStory] = []
+    for entry in feed.entries[: settings.max_entries_per_feed]:
+        story = _to_story_from_feed(feed_cfg, entry, config.excluded_domains)
+        if story is not None:
+            stories.append(story)
+    return stories
+
+
+def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None = None) -> list[RawStory]:
+    collected: list[RawStory] = []
+    started = time.monotonic()
+    query_count = len(config.queries)
+    direct_count = len(config.direct_feeds)
+    processed_queries = 0
+    processed_direct = 0
+    max_runtime = max_runtime_seconds if max_runtime_seconds is not None else settings.fetch_max_runtime_seconds
+    max_raw = settings.max_raw_stories_per_run
+
+    def _time_left() -> float:
+        if max_runtime is None:
+            return float("inf")
+        return max_runtime - (time.monotonic() - started)
+
+    futures: dict = {}
+    executor = ThreadPoolExecutor(max_workers=max(1, settings.fetch_max_workers))
+    try:
+        for query in iter_queries(config):
+            fut = executor.submit(_stories_from_query, query, config)
+            futures[fut] = ("query", query_count)
+        for feed_cfg in iter_direct_feeds(config):
+            fut = executor.submit(_stories_from_direct_feed, feed_cfg, config)
+            futures[fut] = ("direct", direct_count)
+
+        for fut in as_completed(futures):
+            kind, total = futures[fut]
+            if _time_left() <= 0:
+                logger.warning(
+                    "Fetch runtime limit reached; stopping with partial result (stories=%s)",
+                    len(collected),
+                )
+                break
+            try:
+                stories = fut.result()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Fetch task failed for kind=%s: %s", kind, exc)
+                stories = []
+
+            remaining_slots = max_raw - len(collected)
+            if remaining_slots <= 0:
+                logger.warning("Reached max_raw_stories_per_run=%s; truncating feed fetch", max_raw)
+                break
+            if len(stories) > remaining_slots:
+                stories = stories[:remaining_slots]
+            collected.extend(stories)
+
+            if kind == "query":
+                processed_queries += 1
+                if processed_queries % 20 == 0:
+                    logger.warning(
+                        "Fetch progress (queries): %s/%s processed, stories=%s",
+                        processed_queries,
+                        total,
+                        len(collected),
+                    )
+            else:
+                processed_direct += 1
+                if processed_direct % 25 == 0:
+                    logger.warning(
+                        "Fetch progress (direct): %s/%s processed, stories=%s",
+                        processed_direct,
+                        total,
+                        len(collected),
+                    )
+    finally:
+        for fut in futures:
+            if not fut.done():
+                fut.cancel()
+        executor.shutdown(wait=False, cancel_futures=True)
+
+    duration = time.monotonic() - started
+    logger.warning(
+        "Fetch finished: queries=%s/%s direct=%s/%s stories=%s duration=%.1fs",
+        processed_queries,
+        query_count,
+        processed_direct,
+        direct_count,
+        len(collected),
+        duration,
+    )
 
     return collected

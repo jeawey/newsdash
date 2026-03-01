@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     hard_relevance_gate_enabled: bool = Field(default=True, alias="HARD_RELEVANCE_GATE_ENABLED")
     job_stale_after_minutes: int = Field(default=20, alias="JOB_STALE_AFTER_MINUTES")
     pipeline_lock_file: str = Field(default="/tmp/newsdash_pipeline.lock", alias="PIPELINE_LOCK_FILE")
+    fetch_max_runtime_seconds: int = Field(default=480, alias="FETCH_MAX_RUNTIME_SECONDS")
+    feed_fetch_timeout_seconds: int = Field(default=8, alias="FEED_FETCH_TIMEOUT_SECONDS")
+    fetch_max_workers: int = Field(default=16, alias="FETCH_MAX_WORKERS")
+    max_entries_per_feed: int = Field(default=20, alias="MAX_ENTRIES_PER_FEED")
+    max_raw_stories_per_run: int = Field(default=2200, alias="MAX_RAW_STORIES_PER_RUN")
 
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()

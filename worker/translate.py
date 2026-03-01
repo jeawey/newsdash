@@ -7,7 +7,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
-_TRANSLATE_TIMEOUT_SECONDS = 4
+_TRANSLATE_TIMEOUT_SECONDS = 1.5
 _MAX_TEXT_LENGTH = 2200
 
 # Quick heuristic to avoid unnecessary translation calls for already-German text.

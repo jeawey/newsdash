@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.models import JobRun, Story
 from app.settings import get_settings
+from worker.translate import translate_to_german
 from worker.types import ScoredStory
 from worker.utils import canonicalize_url, fingerprint_title_loose
 
@@ -325,15 +326,17 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             nonlocal sector_inserted
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)
+            title_de = translate_to_german(story.title)
+            summary_de = translate_to_german(story.summary)
 
             model = Story(
-                title=story.title,
+                title=title_de,
                 url=story.url,
                 source_name=story.source_name,
                 source_domain=story.source_domain,
                 sector=story.sector,
                 subtopic=story.subtopic,
-                summary=story.summary,
+                summary=summary_de,
                 published_at=story.published_at,
                 fetched_at=datetime.now(pytz.utc),
                 snapshot_date=snapshot_date,

@@ -3,6 +3,7 @@ from contextlib import contextmanager
 import fcntl
 import logging
 from pathlib import Path
+import time
 
 import pytz
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -103,9 +104,26 @@ def run_pipeline(run_type: str) -> None:
 
         try:
             source_config = load_source_config()
-            raw = fetch_all_stories(source_config)
+            t0 = time.monotonic()
+            raw = fetch_all_stories(
+                source_config,
+                max_runtime_seconds=settings.fetch_max_runtime_seconds,
+            )
+            t1 = time.monotonic()
             scored = score_stories(raw, source_config.trusted_domains)
+            t2 = time.monotonic()
             inserted = persist_scored_stories(db, scored, run_type)
+            t3 = time.monotonic()
+            logger.warning(
+                "Run %s phase timings: fetch=%.1fs score=%.1fs store=%.1fs raw=%s scored=%s inserted=%s",
+                run_type,
+                (t1 - t0),
+                (t2 - t1),
+                (t3 - t2),
+                len(raw),
+                len(scored),
+                len(inserted),
+            )
 
             if run_type == "morning":
                 send_digest(inserted, title="Morning Sector Briefing")
