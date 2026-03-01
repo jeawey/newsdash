@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+import logging
 import re
 
 import pytz
@@ -11,6 +12,8 @@ from app.settings import get_settings
 from worker.translate import translate_to_german
 from worker.types import ScoredStory
 from worker.utils import canonicalize_url, fingerprint_title_loose
+
+logger = logging.getLogger(__name__)
 
 
 _SECTOR_RELEVANCE_TERMS: dict[str, tuple[str, ...]] = {
@@ -347,6 +350,8 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     }
     inserted_ids: list[int] = []
     sectors_to_process = set(per_sector.keys()) | set(sector_minimum_targets.keys())
+    drop_reason_counts: dict[str, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    insert_counts: dict[str, int] = defaultdict(int)
     for sector in sectors_to_process:
         sector_stories = per_sector.get(sector, [])
         existing_rows = db.execute(
@@ -369,6 +374,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         if stale_ids:
             db.execute(delete(Story).where(Story.id.in_(stale_ids)))
             db.commit()
+            drop_reason_counts[sector]["removed_stale_existing"] += len(stale_ids)
             existing_rows = [r for r in existing_rows if r.id not in stale_ids]
 
         seen_urls = {canonicalize_url(row.url) for row in existing_rows}
@@ -395,30 +401,30 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             *,
             enforce_domain_cap: bool,
             enforce_loose_dedupe: bool = True,
-        ) -> bool:
+        ) -> tuple[bool, str | None]:
             if not _passes_hard_relevance_gate(story, settings.hard_relevance_gate_enabled):
-                return False
+                return False, "hard_relevance_gate"
             if story.score < settings.min_story_score:
-                return False
+                return False, "min_story_score"
             if story.source_domain in social_domains:
                 if story.score < settings.min_social_story_score:
-                    return False
+                    return False, "min_social_story_score"
                 if story.mentions < settings.min_social_mentions:
-                    return False
+                    return False, "min_social_mentions"
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)
             if url_key in seen_urls:
-                return False
+                return False, "duplicate_url"
             if story.fingerprint in seen_fingerprints:
-                return False
+                return False, "duplicate_fingerprint"
             if enforce_loose_dedupe and sector not in relaxed_dedupe_sectors and loose_fp in seen_loose_fingerprints:
-                return False
+                return False, "duplicate_loose_fingerprint"
             domain_cap = settings.max_items_per_domain_per_sector
             if sector in expanded_domain_cap_sectors:
                 domain_cap += 2
             if enforce_domain_cap and domain_counts[story.source_domain] >= domain_cap:
-                return False
-            return True
+                return False, "domain_cap"
+            return True, None
 
         def _insert_story(story: ScoredStory) -> None:
             nonlocal sector_inserted
@@ -453,6 +459,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             seen_loose_fingerprints.add(loose_fp)
             domain_counts[story.source_domain] += 1
             sector_inserted += 1
+            insert_counts[sector] += 1
 
         if sector in local_quota_sectors:
             by_subtopic: dict[str, list[ScoredStory]] = defaultdict(list)
@@ -464,7 +471,10 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 for story in candidates:
                     if sector_inserted >= sector_limit:
                         break
-                    if not _can_insert(story, enforce_domain_cap=False):
+                    ok, reason = _can_insert(story, enforce_domain_cap=False)
+                    if not ok:
+                        if reason:
+                            drop_reason_counts[sector][reason] += 1
                         continue
                     _insert_story(story)
                     subtopic_inserted += 1
@@ -474,7 +484,10 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         for story in sorted_sector_stories:
             if sector_inserted >= sector_limit:
                 break
-            if not _can_insert(story, enforce_domain_cap=True):
+            ok, reason = _can_insert(story, enforce_domain_cap=True)
+            if not ok:
+                if reason:
+                    drop_reason_counts[sector][reason] += 1
                 continue
             _insert_story(story)
 
@@ -482,11 +495,14 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             for story in sorted_sector_stories:
                 if sector_inserted >= sector_target or sector_inserted >= sector_limit:
                     break
-                if not _can_insert(
+                ok, reason = _can_insert(
                     story,
                     enforce_domain_cap=False,
                     enforce_loose_dedupe=False,
-                ):
+                )
+                if not ok:
+                    if reason:
+                        drop_reason_counts[sector][reason] += 1
                     continue
                 _insert_story(story)
 
@@ -509,7 +525,14 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         prune_ids = [row.id for row in rows if row.id not in keep_ids]
         if prune_ids:
             db.execute(delete(Story).where(Story.id.in_(prune_ids)))
+            drop_reason_counts[sector]["pruned_by_sector_cap"] += len(prune_ids)
     db.commit()
+
+    for sector in sorted(sectors_to_process):
+        inserted = insert_counts.get(sector, 0)
+        drops = dict(sorted(drop_reason_counts.get(sector, {}).items()))
+        if inserted > 0 or drops:
+            logger.warning("Store sector outcome [%s]: inserted=%s drops=%s", sector, inserted, drops)
 
     # Some freshly inserted rows can be pruned by the hard per-sector cap above.
     # Return only rows that still exist to avoid ObjectDeletedError downstream.

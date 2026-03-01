@@ -399,3 +399,20 @@ Für jeden Eintrag:
   - Stark erhöhte Mallorca-Quellenabdeckung durch sections/microsites/blog-Feeds.
 - Rollback-Hinweis:
   - Block `Diario de Mallorca RSS 001-312` in `config/sources.yml` entfernen.
+
+
+### 2026-03-01 21:50:39 CET | Worker (Freshness + Sector Floors + Store Drop Visibility)
+- Änderung:
+  - `worker/scoring.py`:
+    - sektor-spezifische Freshness-Fenster deutlich erweitert (`AI`, `Crypto`, `Sustainability`, `Biotechnologie`, `Cannabis`, `Frequenzen`, `Hamburg`, `Mallorca`, `Kenya`, `Politics`).
+    - Fallback-Fenster für unterversorgte Sektoren erweitert (inkl. `Kenya`, `Hamburg`, `Mallorca`, `Frequenzen`, `AI`, `Crypto`).
+    - neuer Mindestbestand je Sektor in der Scoring-Pipeline (`_SECTOR_MIN_SCORABLE_ITEMS`), der ältere Fallback-Kandidaten auch dann nachzieht, wenn ein Sektor zwar vorhanden ist, aber zu dünn besetzt ist.
+  - `worker/store.py`:
+    - Persistenz-Entscheidungen je Sektor nach Drop-Gründen instrumentiert (`hard_relevance_gate`, `min_story_score`, `duplicate_*`, `domain_cap`, `removed_stale_existing`, `pruned_by_sector_cap`).
+    - neue Logzeile pro Sektor: `Store sector outcome [...] inserted=... drops=...`.
+- Grund:
+  - Fetch lieferte bereits hohe Volumina, aber viele Sektoren wurden durch Freshness und undurchsichtige Persistenz-Filter ausgedünnt.
+- Erwarteter Effekt:
+  - Mehr scorable Kandidaten in bislang unterversorgten Sektoren (vor allem `Kenya`, `Sustainability`, `Biotechnologie`, `Cannabis`, `Frequenzen`) und klare Transparenz, warum Stories im Store verworfen oder gepruned werden.
+- Rollback-Hinweis:
+  - Änderungen in `worker/scoring.py` und `worker/store.py` auf den vorherigen Stand zurücksetzen.

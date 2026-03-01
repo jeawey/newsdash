@@ -112,16 +112,40 @@ _FINAL_SCORE_WEIGHTS: dict[str, float] = {
 }
 
 _SECTOR_MAX_AGE_HOURS: dict[str, int] = {
-    "Sustainability": 120,
-    "Biotechnologie": 96,
-    "Cannabis": 96,
-    "Frequenzen": 96,
+    "AI": 72,
+    "Crypto": 72,
+    "Sustainability": 240,
+    "Biotechnologie": 168,
+    "Cannabis": 168,
+    "Frequenzen": 168,
+    "Hamburg": 72,
+    "Mallorca": 120,
+    "Kenya": 240,
+    "Politics": 72,
 }
 
 _SECTOR_FALLBACK_MAX_AGE_HOURS: dict[str, int] = {
+    "AI": 168,
+    "Crypto": 168,
     "Sustainability": 720,
-    "Biotechnologie": 336,
-    "Cannabis": 336,
+    "Biotechnologie": 720,
+    "Cannabis": 720,
+    "Frequenzen": 720,
+    "Hamburg": 336,
+    "Mallorca": 336,
+    "Kenya": 720,
+}
+
+_SECTOR_MIN_SCORABLE_ITEMS: dict[str, int] = {
+    "AI": 12,
+    "Crypto": 12,
+    "Biotechnologie": 12,
+    "Cannabis": 12,
+    "Frequenzen": 8,
+    "Sustainability": 12,
+    "Hamburg": 8,
+    "Mallorca": 12,
+    "Kenya": 8,
 }
 
 _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
@@ -724,6 +748,9 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
             fallback_grouped[(story.sector, fp)].append(story)
 
     present_sectors = {sector for sector, _ in grouped.keys()}
+    present_counts: dict[str, int] = defaultdict(int)
+    for sector, _ in grouped.keys():
+        present_counts[sector] += 1
     fallback_used: dict[str, int] = defaultdict(int)
     for sector in _SECTOR_FALLBACK_MAX_AGE_HOURS:
         if sector in present_sectors:
@@ -733,6 +760,33 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
                 continue
             grouped[(entry_sector, fp)].extend(entries)
             fallback_used[entry_sector] += len(entries)
+
+    # If a sector has too few fresh stories, top it up with older fallback candidates
+    # so downstream per-sector insertion has enough material to work with.
+    for sector, minimum in _SECTOR_MIN_SCORABLE_ITEMS.items():
+        current = present_counts.get(sector, 0)
+        if current >= minimum:
+            continue
+        needed = minimum - current
+        fallback_candidates: list[tuple[tuple[str, str], list[RawStory]]] = []
+        for key, entries in fallback_grouped.items():
+            entry_sector, _ = key
+            if entry_sector != sector:
+                continue
+            # Skip keys already present in fresh grouping.
+            if key in grouped:
+                continue
+            fallback_candidates.append((key, entries))
+        fallback_candidates.sort(
+            key=lambda item: max(st.published_at for st in item[1]),
+            reverse=True,
+        )
+        for key, entries in fallback_candidates:
+            grouped[key].extend(entries)
+            fallback_used[sector] += len(entries)
+            needed -= 1
+            if needed <= 0:
+                break
 
     if dropped_by_freshness:
         logger.warning("Scoring freshness drops by sector: %s", dict(sorted(dropped_by_freshness.items())))
