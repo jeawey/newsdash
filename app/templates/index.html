@@ -143,7 +143,7 @@
             </p>
             <h3><a href="{{ story.url }}" target="_blank" rel="noopener">{{ story.title }}</a></h3>
             <p class="summary">{{ story.summary }}</p>
-            <p class="meta">{{ story.source_name }} · {{ story.published_at.strftime('%d.%m.%Y %H:%M') }} · Relevanz {{ '%.2f'|format(story.score) }} · Heat {{ '%.2f'|format(story.heat_score) }}</p>
+            <p class="meta">{{ story.source_name }} · {{ story.published_at.strftime('%d.%m.%Y %H:%M') }} · Relevanz {{ '%.2f'|format(story.score) }}</p>
           </article>
           {% endfor %}
           {% else %}
@@ -368,12 +368,13 @@
         cards.forEach((card) => {
           const rawScore = Number(card.dataset.score || 0);
           const scaled = Math.max(1, Math.min(10, (rawScore / 4.4) * 10));
-          card.dataset.relevance = scaled.toFixed(1);
+          card.dataset.relevance = rawScore.toFixed(2);
 
-          let tier = "low";
+          let tier = "verylow";
           if (scaled >= 9) tier = "critical";
           else if (scaled >= 7) tier = "high";
-          else if (scaled >= 4) tier = "medium";
+          else if (scaled >= 5) tier = "medium";
+          else if (scaled >= 3) tier = "low";
           card.dataset.relevanceTier = tier;
 
           const subtopic = card.dataset.subtopic || "";
@@ -384,7 +385,7 @@
           if (chipRow && !chipRow.querySelector(".relevance-pill")) {
             const badge = document.createElement("span");
             badge.className = "relevance-pill";
-            badge.textContent = `${scaled.toFixed(1)}/10`;
+            badge.textContent = `Relevanz ${rawScore.toFixed(2)}`;
             chipRow.appendChild(badge);
           }
         });
