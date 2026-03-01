@@ -35,6 +35,7 @@ class Story(Base):
         UniqueConstraint("url", "snapshot_date", name="uq_story_url_snapshot"),
         Index("ix_story_sector_snapshot_score", "sector", "snapshot_date", "score"),
         Index("ix_story_snapshot_score", "snapshot_date", "score"),
+        Index("ix_story_snapshot_published_score", "snapshot_date", "published_at", "score"),
         Index("ix_story_fingerprint_snapshot", "fingerprint", "snapshot_date"),
     )
 

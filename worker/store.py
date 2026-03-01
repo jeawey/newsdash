@@ -138,11 +138,24 @@ _SECTOR_MIN_HITS: dict[str, int] = {
     "Cannabis": 2,
     "Frequenzen": 2,
     "Sustainability": 2,
-    "Hamburg": 1,
+    "Hamburg": 2,
     "Mallorca": 1,
     "Kenya": 1,
     "Politics": 1,
 }
+
+_HAMBURG_REJECT_TERMS: tuple[str, ...] = (
+    "hannover",
+    "lübeck",
+    "kassel",
+    "bonn",
+    "dubai",
+    "sao paulo",
+    "são paulo",
+    "hamburger rezept",
+    "cheeseburger",
+    "patty",
+)
 
 
 def _count_sector_hits(sector: str, text: str) -> int:
@@ -169,14 +182,20 @@ def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
         return True
     required = _SECTOR_MIN_HITS.get(story.sector, 1)
     text = f"{story.title} {story.summary}".lower()
+    if story.sector == "Hamburg":
+        if any(term in text for term in _HAMBURG_REJECT_TERMS):
+            return False
     return _count_sector_hits(story.sector, text) >= required
 
 
 def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, enabled: bool) -> bool:
     if not enabled:
         return True
-    required = _SECTOR_MIN_HITS.get(sector, 1)
     text = f"{title} {summary}".lower()
+    if sector == "Hamburg":
+        if any(term in text for term in _HAMBURG_REJECT_TERMS):
+            return False
+    required = _SECTOR_MIN_HITS.get(sector, 1)
     return _count_sector_hits(sector, text) >= required
 
 

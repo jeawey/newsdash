@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from functools import lru_cache
 from typing import Optional
 
 import pytz
@@ -6,7 +7,7 @@ from fastapi import Depends, FastAPI, Query, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import desc, select
+from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -31,29 +32,38 @@ def _normalize_sector_name(sector: str) -> str:
 
 
 def _configured_sectors() -> list[str]:
-    config = load_source_config()
-    ordered: list[str] = []
-    for query in config.queries:
-        normalized = _normalize_sector_name(query.sector)
-        if normalized not in ordered:
-            ordered.append(normalized)
-    return ordered
+    return _source_config_views()["configured_sectors"]
 
 
 def _sector_subtopics() -> dict[str, list[str]]:
-    config = load_source_config()
-    per_sector: dict[str, list[str]] = {}
-    for query in config.queries:
-        sector = _normalize_sector_name(query.sector)
-        bucket = per_sector.setdefault(sector, [])
-        if query.subtopic not in bucket:
-            bucket.append(query.subtopic)
-    return per_sector
+    return _source_config_views()["sector_subtopics"]
 
 
 def _topic_sectors() -> list[str]:
+    return _source_config_views()["topic_sectors"]
+
+
+@lru_cache(maxsize=1)
+def _source_config_views() -> dict[str, object]:
+    config = load_source_config()
+    ordered: list[str] = []
+    per_sector: dict[str, list[str]] = {}
+
+    for query in config.queries:
+        sector = _normalize_sector_name(query.sector)
+        if sector not in ordered:
+            ordered.append(sector)
+        bucket = per_sector.setdefault(sector, [])
+        if query.subtopic not in bucket:
+            bucket.append(query.subtopic)
+
     room_only = {"Kenya", "Hamburg", "Mallorca"}
-    return [sector for sector in _configured_sectors() if sector not in room_only]
+    topic_sectors = [sector for sector in ordered if sector not in room_only]
+    return {
+        "configured_sectors": ordered,
+        "sector_subtopics": per_sector,
+        "topic_sectors": topic_sectors,
+    }
 
 
 @app.on_event("startup")
@@ -100,31 +110,26 @@ def get_dashboard_data(
         else datetime.now(tz).date()
     )
 
-    stories = db.scalars(
-        select(Story)
-        .where(
-            Story.snapshot_date == target_date,
-            Story.published_at >= datetime.now(pytz.utc) - timedelta(hours=settings.max_story_age_hours),
-        )
-        .order_by(desc(Story.score))
-    ).all()
-
     now_utc = datetime.now(pytz.utc)
     normal_cutoff = now_utc - timedelta(hours=settings.normal_story_window_hours)
     hot_cutoff = now_utc - timedelta(hours=settings.hot_story_window_hours)
-    filtered_stories: list[Story] = []
-    for story in stories:
-        published = story.published_at
-        if published.tzinfo is None:
-            published = published.replace(tzinfo=pytz.utc)
-        else:
-            published = published.astimezone(pytz.utc)
-
-        is_hot = story.score >= settings.hourly_breaking_threshold
-        if is_hot and published >= hot_cutoff:
-            filtered_stories.append(story)
-        elif (not is_hot) and published >= normal_cutoff:
-            filtered_stories.append(story)
+    filtered_stories = db.scalars(
+        select(Story)
+        .where(
+            Story.snapshot_date == target_date,
+            or_(
+                and_(
+                    Story.score >= settings.hourly_breaking_threshold,
+                    Story.published_at >= hot_cutoff,
+                ),
+                and_(
+                    Story.score < settings.hourly_breaking_threshold,
+                    Story.published_at >= normal_cutoff,
+                ),
+            ),
+        )
+        .order_by(desc(Story.score))
+    ).all()
 
     configured_sectors = _configured_sectors()
     sectors: dict[str, list[StoryOut]] = {sector: [] for sector in configured_sectors}

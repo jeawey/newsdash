@@ -177,10 +177,82 @@ _SECTOR_MIN_SCORE: dict[str, int] = {
     "Cannabis": 2,
     "Frequenzen": 2,
     "Sustainability": 2,
-    "Hamburg": 1,
+    "Hamburg": 2,
     "Mallorca": 1,
     "Kenya": 1,
     "Politics": 1,
+}
+
+_HAMBURG_ANCHOR_TERMS: tuple[str, ...] = (
+    "hamburg",
+    "hamburger senat",
+    "hamburger bürgerschaft",
+    "bezirk hamburg",
+    "st pauli",
+    "kiez",
+    "reeperbahn",
+    "altona",
+    "blankenese",
+    "winterhude",
+    "eppendorf",
+    "schanze",
+    "hafencity",
+    "landungsbrücken",
+    "elbphilharmonie",
+    "hafen hamburg",
+)
+
+_HAMBURG_FOREIGN_GEO_TERMS: tuple[str, ...] = (
+    "hannover",
+    "lübeck",
+    "kassel",
+    "bonn",
+    "dubai",
+    "sao paulo",
+    "são paulo",
+    "berlin",
+    "münchen",
+    "munich",
+    "köln",
+    "cologne",
+    "frankfurt",
+    "stuttgart",
+)
+
+_HAMBURGER_FOOD_TERMS: tuple[str, ...] = (
+    "burger",
+    "cheeseburger",
+    "hamburger rezept",
+    "patty",
+    "pommes",
+    "grillen",
+    "küche",
+    "kitchen",
+    "restaurantkette",
+)
+
+_LOCAL_SUBTOPIC_KEYWORDS: dict[str, dict[str, tuple[str, ...]]] = {
+    "Hamburg": {
+        "Lokale Politik & Gesetze": ("senat", "bürgerschaft", "gesetz", "verordnung", "bezirk", "wahl", "polit"),
+        "Ausschreibungen & Vergaben": ("ausschreibung", "vergabe", "bieter", "bekanntmachung", "tender", "submiss"),
+        "Hotels & Hospitality": ("hotel", "hostel", "hospitality", "gastro", "übernachtung", "beherberg"),
+        "Nachhaltigkeit & Quartiere": ("klima", "wärmewende", "energie", "quartier", "sanierung", "nachhaltig", "umwelt"),
+        "Events & Kultur": ("event", "veranstaltung", "festival", "konzert", "theater", "museum", "kultur", "messe"),
+        "St. Pauli & Kiez": ("st pauli", "kiez", "reeperbahn", "schanzenviertel", "fc st pauli"),
+        "Schlagzeilen & Brennpunkte": ("brand", "feuer", "unfall", "polizei", "kriminal", "razzia", "prozess"),
+        "Wirtschaft & Stadtleben": ("wirtschaft", "hafen", "handel", "arbeitsmarkt", "verkehr", "wohnen", "miete", "infrastruktur"),
+    },
+    "Mallorca": {
+        "Lokale Politik & Gesetze": ("govern", "consell", "parlament", "ayuntamiento", "gesetz", "decreto"),
+        "Ausschreibungen & Vergaben": ("licitación", "ausschreibung", "concurso", "vergabe", "tender"),
+        "Immobilienrecht & Neubau": ("bau", "neubau", "urbanismo", "baurecht", "immobil"),
+        "Ferienlizenzen & Airbnb": ("airbnb", "ferienlizenz", "vacacional", "vermietung", "holiday rental"),
+        "Hoteleroeffnungen & Hospitality": ("hotel", "resort", "hostal", "hospitality", "aparthotel"),
+        "Nachhaltigkeit & Inselprojekte": ("sostenib", "nachhaltig", "solar", "wasser", "energie", "inselprojekt"),
+        "Events & Gesellschaft": ("evento", "fiesta", "festival", "kultur", "gesellschaft", "veranstaltung"),
+        "Ostküste & Gemeinden": ("manacor", "cala ratjada", "santanyi", "felanitx", "arta", "ostküste"),
+        "Wirtschaft & Tourismus": ("tourismus", "wirtschaft", "aena", "flughafen", "kreuzfahrt", "season"),
+    },
 }
 
 
@@ -204,6 +276,42 @@ def _term_hits(text: str, terms: tuple[str, ...]) -> int:
     return score
 
 
+def _select_local_subtopic(sector: str, text: str, fallback: str) -> str:
+    mapping = _LOCAL_SUBTOPIC_KEYWORDS.get(sector, {})
+    if not mapping:
+        return fallback
+    best = fallback
+    best_score = 0
+    for subtopic, terms in mapping.items():
+        hits = _term_hits(text, terms)
+        if hits > best_score:
+            best_score = hits
+            best = subtopic
+    return best
+
+
+def _is_hamburg_local_story(text: str) -> bool:
+    has_anchor = _term_hits(text, _HAMBURG_ANCHOR_TERMS) > 0
+    if not has_anchor:
+        return False
+
+    # Reject "hamburger" as food context unless there is explicit city context.
+    if re.search(r"\bhamburger\b", text) and _term_hits(text, _HAMBURGER_FOOD_TERMS) > 0:
+        has_city_context = _term_hits(text, ("hamburg", "senat", "bürgerschaft", "st pauli", "altona", "hafen")) > 0
+        if not has_city_context:
+            return False
+
+    # Reject non-Hamburg local coverage that leaks in via broad feeds/queries.
+    if _term_hits(text, _HAMBURG_FOREIGN_GEO_TERMS) > 0:
+        strong_hamburg_context = _term_hits(
+            text, ("hamburger senat", "hamburger bürgerschaft", "bezirk hamburg", "hafen hamburg", "st pauli", "reeperbahn")
+        ) >= 1
+        if not strong_hamburg_context:
+            return False
+
+    return True
+
+
 def _classify_sector_and_subtopic(*, base_sector: str, title: str, summary: str, url: str, source_name: str) -> tuple[str, str]:
     # Do not use source_name for semantic classification, it biases by publisher naming.
     text = f"{title} {summary} {url}".lower()
@@ -212,10 +320,12 @@ def _classify_sector_and_subtopic(*, base_sector: str, title: str, summary: str,
     hamburg_hits = _term_hits(text, _SECTOR_KEYWORDS["Hamburg"])
     mallorca_hits = _term_hits(text, _SECTOR_KEYWORDS["Mallorca"])
     kenya_hits = _term_hits(text, _SECTOR_KEYWORDS["Kenya"])
-    if hamburg_hits >= _SECTOR_MIN_SCORE["Hamburg"]:
-        return "Hamburg", _SECTOR_DEFAULT_SUBTOPIC["Hamburg"]
+    if hamburg_hits >= _SECTOR_MIN_SCORE["Hamburg"] and _is_hamburg_local_story(text):
+        subtopic = _select_local_subtopic("Hamburg", text, _SECTOR_DEFAULT_SUBTOPIC["Hamburg"])
+        return "Hamburg", subtopic
     if mallorca_hits >= _SECTOR_MIN_SCORE["Mallorca"]:
-        return "Mallorca", _SECTOR_DEFAULT_SUBTOPIC["Mallorca"]
+        subtopic = _select_local_subtopic("Mallorca", text, _SECTOR_DEFAULT_SUBTOPIC["Mallorca"])
+        return "Mallorca", subtopic
     if kenya_hits >= _SECTOR_MIN_SCORE["Kenya"]:
         return "Kenya", _SECTOR_DEFAULT_SUBTOPIC["Kenya"]
 
@@ -366,6 +476,20 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
         url=url,
         source_name=source_name,
     )
+    text = f"{title} {summary} {url}".lower()
+    if query.sector == "Hamburg":
+        if inferred_sector != "Hamburg":
+            return None
+        if not _is_hamburg_local_story(text):
+            return None
+    if inferred_sector == query.sector:
+        inferred_subtopic = query.subtopic
+    elif inferred_sector in {"Hamburg", "Mallorca"}:
+        inferred_subtopic = _select_local_subtopic(
+            inferred_sector,
+            text,
+            _SECTOR_DEFAULT_SUBTOPIC[inferred_sector],
+        )
     title_de = translate_to_german(title)
     summary_de = translate_to_german(summary)
     published_at = _parse_published(entry)
@@ -407,6 +531,17 @@ def _to_story_from_feed(feed_cfg: DirectFeedConfig, entry: dict, excluded_domain
         url=url,
         source_name=source_name,
     )
+    text = f"{title} {summary} {url}".lower()
+    if inferred_sector == "Hamburg" and not _is_hamburg_local_story(text):
+        return None
+    if inferred_sector == feed_cfg.sector:
+        inferred_subtopic = feed_cfg.subtopic
+    elif inferred_sector in {"Hamburg", "Mallorca"}:
+        inferred_subtopic = _select_local_subtopic(
+            inferred_sector,
+            text,
+            _SECTOR_DEFAULT_SUBTOPIC[inferred_sector],
+        )
     title_de = translate_to_german(title)
     summary_de = translate_to_german(summary)
     published_at = _parse_published(entry)

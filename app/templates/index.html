@@ -210,6 +210,12 @@
       const topCards = Array.from(document.querySelectorAll(".top-card"));
       const topEmpty = document.querySelector(".top-filter-empty");
       const sectorPanels = Array.from(document.querySelectorAll(".sector-panel"));
+      const panelStates = sectorPanels.map((panel) => ({
+        panel,
+        storyCards: Array.from(panel.querySelectorAll(".sector-story")),
+        topicEmpty: panel.querySelector('[data-role="topic-empty"]'),
+        showMoreBtn: panel.querySelector('[data-role="show-more"]'),
+      }));
       const DEFAULT_VISIBLE_PER_PANEL = 16;
       let currentScope = "global";
       let currentTopic = "all";
@@ -283,13 +289,11 @@
           topEmpty.classList.toggle("is-hidden", !showTopEmpty);
         }
 
-        sectorPanels.forEach((panel) => {
+        panelStates.forEach(({ panel, storyCards, topicEmpty, showMoreBtn }) => {
           const panelScopeVisible = isScopeMatch(panel, currentScope);
           const panelTopicVisible = currentScope === "global"
             ? (currentTopic === "all" || panel.dataset.sector === currentTopic)
             : true;
-          const topicEmpty = panel.querySelector('[data-role="topic-empty"]');
-          const showMoreBtn = panel.querySelector('[data-role="show-more"]');
 
           if (!panelScopeVisible || !panelTopicVisible) {
             panel.classList.add("is-hidden");
@@ -297,7 +301,6 @@
             return;
           }
 
-          const storyCards = Array.from(panel.querySelectorAll(".sector-story"));
           if (storyCards.length === 0) {
             panel.classList.remove("is-hidden");
             panel.classList.add("is-visible");
@@ -376,8 +379,7 @@
         });
       });
 
-      sectorPanels.forEach((panel) => {
-        const showMoreBtn = panel.querySelector('[data-role="show-more"]');
+      panelStates.forEach(({ panel, showMoreBtn }) => {
         if (!showMoreBtn) return;
         panel.dataset.expanded = "false";
         showMoreBtn.addEventListener("click", () => {
