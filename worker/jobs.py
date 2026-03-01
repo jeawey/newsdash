@@ -83,7 +83,8 @@ def start_scheduler() -> None:
             logger.exception("Startup ingestion failed; scheduler will continue running")
 
     for job in scheduler.get_jobs():
-        logger.info("Scheduler job registered: id=%s next_run=%s", job.id, job.next_run_time)
+        next_run = getattr(job, "next_run_time", None)
+        logger.info("Scheduler job registered: id=%s next_run=%s", job.id, next_run)
 
     scheduler.start()
 

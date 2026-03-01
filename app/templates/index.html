@@ -29,6 +29,9 @@
         </div>
       </div>
       <div class="hero-right">
+        <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false" aria-label="Zum Light Mode wechseln">
+          Light Mode
+        </button>
         <div class="stat-pill">
           <span class="stat-label">Top-Storys</span>
           <span class="stat-value">{{ top_stories | length }}</span>
@@ -146,8 +149,14 @@
         </div>
 
         <div class="legend-formula">
-          <p><strong>Berechnung (Rohscore):</strong> Relevanz = 0.5 × Aktualität + 0.2 × Quellengewicht + 0.2 × Mehrfachnennungen + 0.1 × Keyword-Treffer.</p>
-          <p><strong>Interpretation:</strong> Die Karten zeigen den Rohscore. Für die Schwere-Einordnung wird er auf 1-10 normalisiert: <code>Skala = clamp(1..10, Rohscore / 4.4 × 10)</code>.</p>
+          <p><strong>Wie entsteht der Relevanz-Wert?</strong></p>
+          <div class="legend-factor-grid">
+            <div class="legend-factor"><span class="factor-dot f1"></span><span><strong>Aktualität</strong>: Je neuer, desto wichtiger.</span></div>
+            <div class="legend-factor"><span class="factor-dot f2"></span><span><strong>Quelle</strong>: Große, verlässliche Medien zählen stärker.</span></div>
+            <div class="legend-factor"><span class="factor-dot f3"></span><span><strong>Bestätigung</strong>: Wenn mehrere Medien berichten, steigt die Relevanz.</span></div>
+            <div class="legend-factor"><span class="factor-dot f4"></span><span><strong>Themen-Treffer</strong>: Passt die Meldung stark zum Thema, gibt es Pluspunkte.</span></div>
+          </div>
+          <p><strong>So liest du die 1-10-Skala:</strong> 1-3 = eher gering, 4-6 = beobachten, 7-8 = wichtig, 9-10 = sehr wichtig / sofort prüfen.</p>
         </div>
 
         <div class="severity-scale" role="img" aria-label="Relevanz-Skala von 1 bis 10">
@@ -166,6 +175,7 @@
     </main>
 
     <script>
+      const themeToggle = document.getElementById("themeToggle");
       const scopeButtons = Array.from(document.querySelectorAll(".scope-btn"));
       const topicButtons = Array.from(document.querySelectorAll(".topic-btn"));
       const topCards = Array.from(document.querySelectorAll(".top-card"));
@@ -174,6 +184,33 @@
       const selectableTopicButtons = topicButtons.filter((button) => !button.classList.contains("scope-btn"));
       let currentScope = "global";
       let currentTopic = "all";
+
+      function applyTheme(theme) {
+        const normalized = theme === "light" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", normalized);
+        try {
+          localStorage.setItem("dashboard-theme", normalized);
+        } catch (_) {}
+
+        if (!themeToggle) return;
+        const isLight = normalized === "light";
+        themeToggle.textContent = isLight ? "Dark Mode" : "Light Mode";
+        themeToggle.setAttribute("aria-pressed", String(isLight));
+        themeToggle.setAttribute("aria-label", isLight ? "Zum Dark Mode wechseln" : "Zum Light Mode wechseln");
+      }
+
+      function initThemeToggle() {
+        let storedTheme = null;
+        try {
+          storedTheme = localStorage.getItem("dashboard-theme");
+        } catch (_) {}
+        applyTheme(storedTheme || "dark");
+        if (!themeToggle) return;
+        themeToggle.addEventListener("click", () => {
+          const current = document.documentElement.getAttribute("data-theme");
+          applyTheme(current === "light" ? "dark" : "light");
+        });
+      }
 
       function isScopeMatch(cardOrPanel, scope) {
         const sector = cardOrPanel.dataset.sector;
@@ -285,54 +322,8 @@
         revealTargets.forEach((el) => observer.observe(el));
       }
 
-      function initSmoothScroll() {
-        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        const finePointer = window.matchMedia("(pointer: fine)").matches;
-        const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-
-        if (reducedMotion || !finePointer || hasTouch) return;
-
-        let targetY = window.scrollY;
-        let currentY = window.scrollY;
-        let rafId = null;
-
-        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
-        const maxDelta = 220;
-        const strength = 1.18;
-        const ease = 0.12;
-
-        const tick = () => {
-          currentY += (targetY - currentY) * ease;
-          if (Math.abs(targetY - currentY) < 0.5) {
-            currentY = targetY;
-            window.scrollTo(0, currentY);
-            rafId = null;
-            return;
-          }
-          window.scrollTo(0, currentY);
-          rafId = window.requestAnimationFrame(tick);
-        };
-
-        window.addEventListener(
-          "wheel",
-          (event) => {
-            if (event.ctrlKey || event.metaKey) return;
-            event.preventDefault();
-
-            const boundedDelta = clamp(event.deltaY, -maxDelta, maxDelta);
-            const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
-            targetY = clamp(targetY + boundedDelta * strength, 0, scrollMax);
-
-            if (!rafId) {
-              rafId = window.requestAnimationFrame(tick);
-            }
-          },
-          { passive: false }
-        );
-      }
-
       initRevealAnimations();
-      initSmoothScroll();
+      initThemeToggle();
 
       const AUTO_REFRESH_MS = 5 * 60 * 1000;
       setInterval(() => {
