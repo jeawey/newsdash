@@ -603,7 +603,10 @@ def _stories_from_direct_feed(feed_cfg: DirectFeedConfig, config: SourceConfig) 
 
 
 def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None = None) -> list[RawStory]:
-    collected: list[RawStory] = []
+    collected_queries: list[RawStory] = []
+    collected_direct: list[RawStory] = []
+    overflow_queries: list[RawStory] = []
+    overflow_direct: list[RawStory] = []
     started = time.monotonic()
     query_count = len(config.queries)
     direct_count = len(config.direct_feeds)
@@ -611,6 +614,13 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
     processed_direct = 0
     max_runtime = max_runtime_seconds if max_runtime_seconds is not None else settings.fetch_max_runtime_seconds
     max_raw = settings.max_raw_stories_per_run
+    direct_share = min(max(settings.direct_feed_raw_share, 0.0), 1.0)
+    direct_floor = max(0, settings.min_direct_feed_raw_stories if direct_count else 0)
+    direct_budget = min(max_raw, max(int(max_raw * direct_share), direct_floor)) if direct_count else 0
+    query_budget = max_raw - direct_budget
+    if query_count == 0 and direct_budget < max_raw:
+        direct_budget = max_raw
+        query_budget = 0
 
     def _time_left() -> float:
         if max_runtime is None:
@@ -632,7 +642,7 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
             if _time_left() <= 0:
                 logger.warning(
                     "Fetch runtime limit reached; stopping with partial result (stories=%s)",
-                    len(collected),
+                    len(collected_queries) + len(collected_direct),
                 )
                 break
             try:
@@ -641,13 +651,24 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
                 logger.warning("Fetch task failed for kind=%s: %s", kind, exc)
                 stories = []
 
-            remaining_slots = max_raw - len(collected)
-            if remaining_slots <= 0:
-                logger.warning("Reached max_raw_stories_per_run=%s; truncating feed fetch", max_raw)
-                break
-            if len(stories) > remaining_slots:
-                stories = stories[:remaining_slots]
-            collected.extend(stories)
+            if kind == "query":
+                remaining_for_kind = query_budget - len(collected_queries)
+                if remaining_for_kind > 0:
+                    accepted = stories[:remaining_for_kind]
+                    rejected = stories[remaining_for_kind:]
+                    collected_queries.extend(accepted)
+                    overflow_queries.extend(rejected)
+                else:
+                    overflow_queries.extend(stories)
+            else:
+                remaining_for_kind = direct_budget - len(collected_direct)
+                if remaining_for_kind > 0:
+                    accepted = stories[:remaining_for_kind]
+                    rejected = stories[remaining_for_kind:]
+                    collected_direct.extend(accepted)
+                    overflow_direct.extend(rejected)
+                else:
+                    overflow_direct.extend(stories)
 
             if kind == "query":
                 processed_queries += 1
@@ -656,7 +677,7 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
                         "Fetch progress (queries): %s/%s processed, stories=%s",
                         processed_queries,
                         total,
-                        len(collected),
+                        len(collected_queries) + len(collected_direct),
                     )
             else:
                 processed_direct += 1
@@ -665,7 +686,7 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
                         "Fetch progress (direct): %s/%s processed, stories=%s",
                         processed_direct,
                         total,
-                        len(collected),
+                        len(collected_queries) + len(collected_direct),
                     )
     finally:
         for fut in futures:
@@ -673,15 +694,34 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
                 fut.cancel()
         executor.shutdown(wait=False, cancel_futures=True)
 
+    total_collected = len(collected_queries) + len(collected_direct)
+    if total_collected < max_raw:
+        remaining_slots = max_raw - total_collected
+        if remaining_slots > 0:
+            direct_fill = overflow_direct[:remaining_slots]
+            collected_direct.extend(direct_fill)
+            remaining_slots -= len(direct_fill)
+        if remaining_slots > 0:
+            query_fill = overflow_queries[:remaining_slots]
+            collected_queries.extend(query_fill)
+
+    collected = collected_direct + collected_queries
+    if len(collected) > max_raw:
+        collected = collected[:max_raw]
+
     duration = time.monotonic() - started
     logger.warning(
-        "Fetch finished: queries=%s/%s direct=%s/%s stories=%s duration=%.1fs",
+        "Fetch finished: queries=%s/%s direct=%s/%s stories=%s duration=%.1fs budgets(query=%s,direct=%s) accepted(query=%s,direct=%s)",
         processed_queries,
         query_count,
         processed_direct,
         direct_count,
         len(collected),
         duration,
+        query_budget,
+        direct_budget,
+        len(collected_queries),
+        len(collected_direct),
     )
 
     return collected

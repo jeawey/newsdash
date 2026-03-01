@@ -54,6 +54,7 @@ Für jeden Eintrag:
   - Theme-Toggle auf Font-Awesome-Icons (`fa-sun`/`fa-moon`) umgestellt.
   - Light-Mode-Kontrast weiter erhöht für `HOT`-Badge, Relevanz-Badges und Meta-Zeile mit „Relevanz …“.
   - Relevanz-Legende im Light Mode weiter nachgeschärft (Header, Fließtext, `strong`, Skalenzahlen und Label).
+  - Header-Layout nachjustiert: Theme-Toggle auf gleiche Höhe wie „Top-Storys“/„Sektoren“ gesetzt und vertikal mit den Stat-Pills zentriert.
 - Grund:
   - Gewünschte Textfarbänderungen waren visuell nicht deutlich genug bzw. betrafen bisher nicht alle relevanten Elemente.
 - Erwarteter Effekt:

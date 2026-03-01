@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     fetch_max_workers: int = Field(default=16, alias="FETCH_MAX_WORKERS")
     max_entries_per_feed: int = Field(default=20, alias="MAX_ENTRIES_PER_FEED")
     max_raw_stories_per_run: int = Field(default=2200, alias="MAX_RAW_STORIES_PER_RUN")
+    min_direct_feed_raw_stories: int = Field(default=900, alias="MIN_DIRECT_FEED_RAW_STORIES")
+    direct_feed_raw_share: float = Field(default=0.55, alias="DIRECT_FEED_RAW_SHARE")
+    scoring_explain_log_limit: int = Field(default=8, alias="SCORING_EXPLAIN_LOG_LIMIT")
 
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()

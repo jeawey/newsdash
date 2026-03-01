@@ -43,6 +43,34 @@ def _topic_sectors() -> list[str]:
     return _source_config_views()["topic_sectors"]
 
 
+def _select_diverse_top_stories(stories: list[Story], *, limit: int = 10, max_per_sector: int = 3) -> list[Story]:
+    if not stories:
+        return []
+    selected: list[Story] = []
+    counts: dict[str, int] = {}
+
+    for story in stories:
+        sector = _normalize_sector_name(story.sector)
+        if counts.get(sector, 0) >= max_per_sector:
+            continue
+        selected.append(story)
+        counts[sector] = counts.get(sector, 0) + 1
+        if len(selected) >= limit:
+            return selected
+
+    if len(selected) >= limit:
+        return selected[:limit]
+
+    selected_ids = {story.id for story in selected}
+    for story in stories:
+        if story.id in selected_ids:
+            continue
+        selected.append(story)
+        if len(selected) >= limit:
+            break
+    return selected
+
+
 @lru_cache(maxsize=1)
 def _source_config_views() -> dict[str, object]:
     config = load_source_config()
@@ -139,9 +167,10 @@ def get_dashboard_data(
         )
         sectors.setdefault(story_out.sector, []).append(story_out)
 
+    top_story_pool = _select_diverse_top_stories(filtered_stories, limit=10, max_per_sector=3)
     top_stories = [
         StoryOut.model_validate(s).model_copy(update={"sector": _normalize_sector_name(s.sector)})
-        for s in filtered_stories[:10]
+        for s in top_story_pool
     ]
     return DashboardResponse(snapshot_date=target_date, sectors=sectors, top_stories=top_stories)
 
