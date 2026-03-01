@@ -32,6 +32,14 @@ _SOURCE_DOMAIN_NAME_OVERRIDES = {
     "cnn.com": "CNN",
 }
 
+_SOURCE_NAME_NORMALIZATION_OVERRIDES = {
+    "nyt": "The New York Times",
+    "ny times": "The New York Times",
+    "new york times": "The New York Times",
+    "el pais": "EL PAÍS",
+    "elpais": "EL PAÍS",
+}
+
 
 def _normalize_sector_name(sector: str) -> str:
     aliases = {
@@ -61,7 +69,9 @@ def _normalize_source_name(source_name: str, source_domain: str) -> str:
 
     cleaned = re.sub(r"\s+", " ", raw).strip()
 
-    if cleaned.lower().startswith("feedspot"):
+    lowered = cleaned.lower()
+
+    if lowered.startswith("feedspot"):
         if ")" in cleaned:
             tail = cleaned.split(")", 1)[1].strip(" -:|")
             if tail:
@@ -71,7 +81,21 @@ def _normalize_source_name(source_name: str, source_domain: str) -> str:
             return cleaned
         return _title_from_domain(source_domain)
 
+    # Normalize wrappers like "Countries/Spain: EL PAÍS: el periódico global"
+    if lowered.startswith("countries/") or lowered.startswith("de rssv"):
+        if ":" in cleaned:
+            cleaned = cleaned.split(":", 1)[1].strip()
+        if ":" in cleaned:
+            cleaned = cleaned.split(":", 1)[0].strip()
+        if " - " in cleaned:
+            cleaned = cleaned.split(" - ", 1)[0].strip()
+        if " > " in cleaned:
+            cleaned = cleaned.split(" > ", 1)[0].strip()
+
     cleaned = re.sub(r"^\([^)]*\)\s*", "", cleaned).strip()
+    key = cleaned.lower().strip()
+    if key in _SOURCE_NAME_NORMALIZATION_OVERRIDES:
+        return _SOURCE_NAME_NORMALIZATION_OVERRIDES[key]
     if re.fullmatch(r"(https?://)?(www\.)?[a-z0-9.-]+\.[a-z]{2,}(/.*)?", cleaned.lower()):
         return _title_from_domain(source_domain or cleaned)
     return cleaned

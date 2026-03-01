@@ -618,3 +618,16 @@ Für jeden Eintrag:
   - Metazeile zeigt konsistent Herausgeber wie `Mallorca Zeitung`, `The New York Times` statt `Feedspot ...`.
 - Rollback-Hinweis:
   - Source-Name-Normalisierung in `app/main.py` entfernen.
+
+### 2026-03-01 23:49:40 CET | Web/API (Countries/DE-RSSV Präfixe auf Publisher reduziert)
+- Änderung:
+  - `app/main.py`:
+    - zusätzliche Source-Name-Normalisierung für Wrapper wie `Countries/...` und `DE RSSV ...`.
+    - entfernt Länder-/Katalogpräfixe und Feed-Suffixe (`: ...`, ` - ...`, ` > ...`) zugunsten des Publishernamens.
+    - Alias-Mapping ergänzt (u. a. `NYT -> The New York Times`, `EL PAIS -> EL PAÍS`).
+- Grund:
+  - UI soll echte Herausgeber anzeigen, nicht Katalog-/Wrapperbezeichner.
+- Erwarteter Effekt:
+  - z. B. `Countries/Spain: EL PAÍS: ...` -> `EL PAÍS`, `Countries/United States: NYT > ...` -> `The New York Times`.
+- Rollback-Hinweis:
+  - Zusatzlogik in `_normalize_source_name` zurücksetzen.
