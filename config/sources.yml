@@ -49,19 +49,19 @@ sectors:
 
   Hamburg:
     - name: "Lokale Politik & Gesetze"
-      query: "Hamburg Gesetzesänderung Bürgerschaft Senat lokal news site:abendblatt.de OR site:ndr.de OR site:mopo.de"
+      query: "Hamburg Nachrichten Lokalpolitik Senat Bürgerschaft Gesetzesänderung Verkehr Wohnen"
     - name: "Events & Kultur"
-      query: "Hamburg Veranstaltungen Events Kultur heute site:hamburg.de OR site:ndr.de OR site:abendblatt.de"
+      query: "Hamburg Veranstaltungen Events Kultur Konzert Festival heute Wochenende"
     - name: "Wirtschaft & Stadtleben"
-      query: "Hamburg Wirtschaft Innenstadt Verkehr Wohnen lokale Nachrichten site:abendblatt.de OR site:welt.de OR site:ndr.de"
+      query: "Hamburg Wirtschaft Hafen Innenstadt Verkehr Stadtleben lokale Nachrichten"
 
   Mallorca:
     - name: "Lokale Politik & Gesetze"
-      query: "Mallorca Gesetzesänderung Balearen Politik local news site:mallorcazeitung.es OR site:ultimahora.es OR site:diariodemallorca.es"
+      query: "Mallorca noticias local politica ayuntamiento Palma Balears ley cambio"
     - name: "Events & Gesellschaft"
-      query: "Mallorca Veranstaltungen Events Kultur lokale Nachrichten site:mallorcazeitung.es OR site:diariodemallorca.es OR site:ultimahora.es"
+      query: "Mallorca eventos cultura agenda Palma noticias locales hoy"
     - name: "Wirtschaft & Tourismus"
-      query: "Mallorca Tourismus Wirtschaft Infrastruktur lokale News site:hosteltur.com OR site:mallorcazeitung.es OR site:diariodemallorca.es"
+      query: "Mallorca turismo economia vivienda transporte aeropuerto noticias"
 
   Kenya:
     - name: "Politics"

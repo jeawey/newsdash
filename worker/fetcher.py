@@ -30,8 +30,12 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
     if not title or not url:
         return None
 
-    source_name = entry.get("source", {}).get("title", "Unknown source")
+    source_meta = entry.get("source", {}) or {}
+    source_name = source_meta.get("title", "Unknown source")
+    source_href = source_meta.get("href", "")
     source_domain = extract_domain(url)
+    if source_domain == "news.google.com" and source_href:
+        source_domain = extract_domain(source_href)
     if source_domain in excluded_domains:
         return None
 
@@ -53,8 +57,18 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
 def fetch_all_stories(config: SourceConfig) -> list[RawStory]:
     collected: list[RawStory] = []
 
+    def locale_for_sector(sector: str) -> tuple[str, str]:
+        if sector == "Hamburg":
+            return ("de", "DE")
+        if sector == "Mallorca":
+            return ("es", "ES")
+        if sector == "Kenya":
+            return ("en", "KE")
+        return ("en", "US")
+
     for query in iter_queries(config):
-        feed_url = google_news_rss_url(query.query)
+        lang, region = locale_for_sector(query.sector)
+        feed_url = google_news_rss_url(query.query, lang=lang, region=region)
         feed = feedparser.parse(feed_url)
 
         for entry in feed.entries:
