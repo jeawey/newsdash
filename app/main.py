@@ -40,6 +40,10 @@ def _configured_sectors() -> list[str]:
     return ordered
 
 
+def _topic_sectors() -> list[str]:
+    return [sector for sector in _configured_sectors() if sector != "Kenya"]
+
+
 @app.on_event("startup")
 def create_schema() -> None:
     Base.metadata.create_all(bind=engine)
@@ -125,6 +129,7 @@ def dashboard(
             "top_stories": payload.top_stories,
             "sectors": payload.sectors,
             "configured_sectors": _configured_sectors(),
+            "configured_topics": _topic_sectors(),
             "sector_colors": SECTOR_COLORS,
             "asset_prefix": "/static",
         },

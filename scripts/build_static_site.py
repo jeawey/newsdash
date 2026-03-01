@@ -47,6 +47,8 @@ def _render_index(
     snapshot_date: str,
     top_stories: List[ScoredStory],
     sectors: Dict[str, List[ScoredStory]],
+    configured_sectors: List[str],
+    configured_topics: List[str],
     asset_prefix: str,
 ) -> None:
     env = Environment(
@@ -58,6 +60,9 @@ def _render_index(
         snapshot_date=snapshot_date,
         top_stories=top_stories,
         sectors=sectors,
+        configured_sectors=configured_sectors,
+        configured_topics=configured_topics,
+        latest_story_ids=[],
         sector_colors=SECTOR_COLORS,
         asset_prefix=asset_prefix,
     )
@@ -109,16 +114,30 @@ def build_site(output_dir: Path, asset_prefix: str, custom_domain: str) -> None:
         source_config = load_source_config()
         raw_stories = fetch_all_stories(source_config)
         scored_stories = score_stories(raw_stories, source_config.trusted_domains)
+        configured_sectors: List[str] = []
+        for query in source_config.queries:
+            if query.sector not in configured_sectors:
+                configured_sectors.append(query.sector)
     except Exception as exc:  # noqa: BLE001
         print(f"WARN: News build failed, publishing empty dashboard: {exc}")
         scored_stories = []
+        configured_sectors = []
 
     top_stories = scored_stories[:10]
     sectors = _group_by_sector(scored_stories, settings.max_items_per_sector)
+    configured_topics = [sector for sector in configured_sectors if sector != "Kenya"]
 
     output_dir.mkdir(parents=True, exist_ok=True)
     _copy_assets(output_dir)
-    _render_index(output_dir, snapshot_date, top_stories, sectors, asset_prefix)
+    _render_index(
+        output_dir,
+        snapshot_date,
+        top_stories,
+        sectors,
+        configured_sectors,
+        configured_topics,
+        asset_prefix,
+    )
     _write_data_json(output_dir, snapshot_date, top_stories, sectors)
     _write_cname(output_dir, custom_domain)
 

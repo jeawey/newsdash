@@ -235,6 +235,12 @@ main {
   box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.24), 0 0 24px -14px var(--glow);
 }
 
+.topic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .is-hidden {
   display: none;
 }
@@ -319,6 +325,91 @@ main {
   text-decoration-color: color-mix(in srgb, var(--sector-accent), #ffffff 45%);
 }
 
+.relevance-legend {
+  --sector-accent: #67e8f9;
+}
+
+.legend-formula {
+  margin-bottom: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid rgba(164, 195, 245, 0.24);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+}
+
+.legend-formula p {
+  margin: 0;
+  color: #d7e7ff;
+  line-height: 1.45;
+  font-size: 0.86rem;
+}
+
+.legend-formula p + p {
+  margin-top: 0.45rem;
+}
+
+.legend-formula code {
+  font-size: 0.8rem;
+  color: #c9fcff;
+}
+
+.severity-scale {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 0.45rem;
+}
+
+.severity-step {
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 0.5rem 0.35rem 0.45rem;
+  text-align: center;
+  color: #09101f;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.severity-step span {
+  display: block;
+  font-family: "Sora", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.severity-step small {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.s1,
+.s2 {
+  background: linear-gradient(145deg, #8be9a2, #62cc7f);
+}
+
+.s3,
+.s4 {
+  background: linear-gradient(145deg, #d4ef86, #b8dd62);
+}
+
+.s5,
+.s6 {
+  background: linear-gradient(145deg, #ffe082, #f5c65f);
+}
+
+.s7,
+.s8 {
+  background: linear-gradient(145deg, #ffb467, #f6934c);
+}
+
+.s9,
+.s10 {
+  background: linear-gradient(145deg, #ff8585, #ef5959);
+}
+
 .summary {
   margin: 0.54rem 0;
   color: var(--muted);
@@ -385,6 +476,10 @@ main {
 
   .logo {
     border-radius: 16px;
+  }
+
+  .severity-scale {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
