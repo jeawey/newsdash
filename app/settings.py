@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     run_ingestion_on_startup: bool = Field(default=True, alias="RUN_INGESTION_ON_STARTUP")
     hard_relevance_gate_enabled: bool = Field(default=True, alias="HARD_RELEVANCE_GATE_ENABLED")
     job_stale_after_minutes: int = Field(default=20, alias="JOB_STALE_AFTER_MINUTES")
+    pipeline_lock_file: str = Field(default="/tmp/newsdash_pipeline.lock", alias="PIPELINE_LOCK_FILE")
 
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()

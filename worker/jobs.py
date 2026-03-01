@@ -1,5 +1,8 @@
 from datetime import datetime, timedelta
+from contextlib import contextmanager
+import fcntl
 import logging
+from pathlib import Path
 
 import pytz
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -19,6 +22,28 @@ from worker.telegram import send_digest
 
 settings = get_settings()
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def _pipeline_file_lock():
+    lock_path = Path(settings.pipeline_lock_file)
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    fh = lock_path.open("a+")
+    acquired = False
+    try:
+        try:
+            fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            acquired = True
+        except BlockingIOError:
+            acquired = False
+        yield acquired
+    finally:
+        if acquired:
+            try:
+                fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass
+        fh.close()
 
 
 def _to_utc(dt: datetime) -> datetime:
@@ -52,46 +77,51 @@ def _cleanup_all_running_jobs(db, *, reason: str) -> int:
 
 
 def run_pipeline(run_type: str) -> None:
-    db = SessionLocal()
-    cleaned = _cleanup_stale_running_jobs(db, stale_after_minutes=settings.job_stale_after_minutes)
-    if cleaned:
-        logger.warning("Auto-cleaned %s stale running job(s) before new run", cleaned)
+    with _pipeline_file_lock() as lock_acquired:
+        if not lock_acquired:
+            logger.warning(
+                "Skipping run_type=%s because pipeline file lock is already held (%s)",
+                run_type,
+                settings.pipeline_lock_file,
+            )
+            return
 
-    active_run = db.execute(
-        select(JobRun.id).where(JobRun.status == "running").order_by(JobRun.started_at.asc())
-    ).first()
-    if active_run is not None:
-        logger.warning(
-            "Skipping run_type=%s because another run is already active (job_run_id=%s)",
-            run_type,
-            active_run[0],
+        db = SessionLocal()
+        # If we hold the process lock, any pre-existing running row is orphaned.
+        cleaned_orphaned = _cleanup_all_running_jobs(
+            db,
+            reason="auto-cleanup orphaned running job before locked run",
         )
-        db.close()
-        return
+        if cleaned_orphaned:
+            logger.warning("Auto-cleaned %s orphaned running job(s) before new run", cleaned_orphaned)
 
-    run_logger = RunLogger(db, run_type)
+        cleaned = _cleanup_stale_running_jobs(db, stale_after_minutes=settings.job_stale_after_minutes)
+        if cleaned:
+            logger.warning("Auto-cleaned %s stale running job(s) before new run", cleaned)
 
-    try:
-        source_config = load_source_config()
-        raw = fetch_all_stories(source_config)
-        scored = score_stories(raw, source_config.trusted_domains)
-        inserted = persist_scored_stories(db, scored, run_type)
+        run_logger = RunLogger(db, run_type)
 
-        if run_type == "morning":
-            send_digest(inserted, title="Morning Sector Briefing")
-        elif run_type == "hourly":
-            breaking = [s for s in inserted if s.heat_score >= settings.hourly_breaking_threshold]
-            send_digest(breaking, title="Breaking Sector Updates")
-
-        run_logger.finish("success", f"inserted={len(inserted)}")
-    except BaseException as exc:  # noqa: BLE001
         try:
-            run_logger.finish("failed", f"{exc.__class__.__name__}: {exc}")
-        except Exception:  # noqa: BLE001
-            logger.exception("Failed to persist failed status for run_type=%s", run_type)
-        raise
-    finally:
-        db.close()
+            source_config = load_source_config()
+            raw = fetch_all_stories(source_config)
+            scored = score_stories(raw, source_config.trusted_domains)
+            inserted = persist_scored_stories(db, scored, run_type)
+
+            if run_type == "morning":
+                send_digest(inserted, title="Morning Sector Briefing")
+            elif run_type == "hourly":
+                breaking = [s for s in inserted if s.heat_score >= settings.hourly_breaking_threshold]
+                send_digest(breaking, title="Breaking Sector Updates")
+
+            run_logger.finish("success", f"inserted={len(inserted)}")
+        except BaseException as exc:  # noqa: BLE001
+            try:
+                run_logger.finish("failed", f"{exc.__class__.__name__}: {exc}")
+            except Exception:  # noqa: BLE001
+                logger.exception("Failed to persist failed status for run_type=%s", run_type)
+            raise
+        finally:
+            db.close()
 
 
 def run_morning_snapshot() -> None:
