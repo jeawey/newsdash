@@ -152,6 +152,10 @@
             <p class="summary">Der nächste stündliche Run ergänzt neue Meldungen.</p>
           </article>
           {% endif %}
+          <article class="story-card sector-empty topic-filter-empty is-hidden" data-role="topic-empty">
+            <h3>Keine News für diesen Filter</h3>
+            <p class="summary">In diesem Bereich gibt es aktuell keine passenden Meldungen.</p>
+          </article>
         </div>
       </section>
       {% else %}
@@ -279,6 +283,7 @@
           const panelTopicVisible = currentScope === "global"
             ? (currentTopic === "all" || panel.dataset.sector === currentTopic)
             : true;
+          const topicEmpty = panel.querySelector('[data-role="topic-empty"]');
 
           if (!panelScopeVisible || !panelTopicVisible) {
             panel.classList.add("is-hidden");
@@ -288,6 +293,7 @@
           const storyCards = Array.from(panel.querySelectorAll(".sector-story"));
           if (storyCards.length === 0) {
             panel.classList.remove("is-hidden");
+            if (topicEmpty) topicEmpty.classList.add("is-hidden");
             return;
           }
 
@@ -302,7 +308,10 @@
             if (visible) visibleStories += 1;
           });
 
-          panel.classList.toggle("is-hidden", visibleStories === 0);
+          panel.classList.remove("is-hidden");
+          if (topicEmpty) {
+            topicEmpty.classList.toggle("is-hidden", visibleStories > 0);
+          }
         });
       }
 

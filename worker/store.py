@@ -84,14 +84,18 @@ _SECTOR_RELEVANCE_TERMS: dict[str, tuple[str, ...]] = {
     ),
     "Hamburg": (
         "hamburg",
-        "senat",
-        "bürgerschaft",
         "st pauli",
         "kiez",
         "reeperbahn",
         "hafen",
-        "verkehr",
-        "bezirk",
+        "altona",
+        "blankenese",
+        "winterhude",
+        "eppendorf",
+        "schanze",
+        "hafencity",
+        "landungsbrücken",
+        "elb",
     ),
     "Mallorca": (
         "mallorca",
@@ -224,7 +228,9 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         "Mallorca": 12,
     }
     inserted: list[Story] = []
-    for sector, sector_stories in per_sector.items():
+    sectors_to_process = set(per_sector.keys()) | set(sector_minimum_targets.keys())
+    for sector in sectors_to_process:
+        sector_stories = per_sector.get(sector, [])
         existing_rows = db.execute(
             select(Story.id, Story.url, Story.fingerprint, Story.title, Story.summary, Story.source_domain).where(
                 Story.snapshot_date == snapshot_date,

@@ -46,15 +46,20 @@ _SECTOR_DEFAULT_SUBTOPIC: dict[str, str] = {
 _SECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
     "AI": (
         "ai",
+        "ki",
         "artificial intelligence",
         "machine learning",
         "openai",
         "anthropic",
         "llm",
         "gpt",
-        "model launch",
+        "chatgpt",
+        "claude",
+        "gemini",
+        "ai model",
         "copilot",
         "deep learning",
+        "neural network",
     ),
     "Crypto": (
         "crypto",
@@ -112,8 +117,14 @@ _SECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
         "reeperbahn",
         "elbphilharmonie",
         "hafen",
-        "bürgerschaft",
-        "senat hamburg",
+        "altona",
+        "blankenese",
+        "winterhude",
+        "eppendorf",
+        "schanze",
+        "hafencity",
+        "landungsbrücken",
+        "elb",
     ),
     "Mallorca": (
         "mallorca",
@@ -134,14 +145,42 @@ _SECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
     ),
     "Politics": (
         "election",
+        "wahl",
         "parliament",
+        "regierung",
         "government",
         "policy",
         "minister",
         "sanction",
         "diplomacy",
         "war",
+        "krieg",
+        "conflict",
+        "iran",
+        "russia",
+        "russland",
+        "ukraine",
+        "tanker",
+        "beschlagnah",
+        "seized",
+        "navy",
+        "military",
+        "defense",
+        "verteidigung",
     ),
+}
+
+_SECTOR_MIN_SCORE: dict[str, int] = {
+    "AI": 3,
+    "Crypto": 2,
+    "Biotechnologie": 2,
+    "Cannabis": 2,
+    "Frequenzen": 2,
+    "Sustainability": 2,
+    "Hamburg": 1,
+    "Mallorca": 1,
+    "Kenya": 1,
+    "Politics": 1,
 }
 
 
@@ -166,27 +205,38 @@ def _term_hits(text: str, terms: tuple[str, ...]) -> int:
 
 
 def _classify_sector_and_subtopic(*, base_sector: str, title: str, summary: str, url: str, source_name: str) -> tuple[str, str]:
-    text = f"{title} {summary} {url} {source_name}".lower()
+    # Do not use source_name for semantic classification, it biases by publisher naming.
+    text = f"{title} {summary} {url}".lower()
 
     # Location rooms override global thematic sectors when explicit.
-    if _term_hits(text, _SECTOR_KEYWORDS["Hamburg"]) > 0:
+    hamburg_hits = _term_hits(text, _SECTOR_KEYWORDS["Hamburg"])
+    mallorca_hits = _term_hits(text, _SECTOR_KEYWORDS["Mallorca"])
+    kenya_hits = _term_hits(text, _SECTOR_KEYWORDS["Kenya"])
+    if hamburg_hits >= _SECTOR_MIN_SCORE["Hamburg"]:
         return "Hamburg", _SECTOR_DEFAULT_SUBTOPIC["Hamburg"]
-    if _term_hits(text, _SECTOR_KEYWORDS["Mallorca"]) > 0:
+    if mallorca_hits >= _SECTOR_MIN_SCORE["Mallorca"]:
         return "Mallorca", _SECTOR_DEFAULT_SUBTOPIC["Mallorca"]
-    if _term_hits(text, _SECTOR_KEYWORDS["Kenya"]) > 0:
+    if kenya_hits >= _SECTOR_MIN_SCORE["Kenya"]:
         return "Kenya", _SECTOR_DEFAULT_SUBTOPIC["Kenya"]
 
-    best_sector = base_sector
-    best_score = 0
+    scores: dict[str, int] = {}
     for sector, terms in _SECTOR_KEYWORDS.items():
         if sector in {"Hamburg", "Mallorca", "Kenya"}:
             continue
-        hits = _term_hits(text, terms)
-        if hits > best_score:
-            best_score = hits
-            best_sector = sector
+        scores[sector] = _term_hits(text, terms)
 
-    if best_score <= 0:
+    # Tie-break toward Politics for ambiguous geopolitical stories.
+    politics_score = scores.get("Politics", 0)
+    best_sector = max(scores, key=scores.get) if scores else base_sector
+    best_score = scores.get(best_sector, 0)
+    min_required = _SECTOR_MIN_SCORE.get(best_sector, 1)
+
+    if best_sector != "Politics" and politics_score >= 2 and best_score < max(3, politics_score):
+        best_sector = "Politics"
+        best_score = politics_score
+        min_required = _SECTOR_MIN_SCORE["Politics"]
+
+    if best_score < min_required:
         best_sector = "Politics"
 
     return best_sector, _SECTOR_DEFAULT_SUBTOPIC.get(best_sector, "Global Power Moves")
