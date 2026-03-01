@@ -101,6 +101,18 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `worker/scoring.py` zurücknehmen.
 
+### 2026-03-01 20:11:19 Europe/Madrid | Worker (Fetch-Backfill respektiert Sektor-Caps)
+- Änderung:
+  - Backfill-Phase im Fetch korrigiert: Overflow-Stories werden beim Auffüllen jetzt erneut durch die sektoralen Limits/Floors geprüft (statt Caps implizit zu umgehen).
+  - Finale Sektorverteilung im Fetch-Log ergänzt:
+    - `Fetch sector split (final)`
+- Grund:
+  - Sektor-Caps wurden beim Backfill teilweise umgangen; dadurch konnte Politics trotz Limits wieder überproportional in den Rohdaten-Pool gelangen.
+- Erwarteter Effekt:
+  - Stabilere Einhaltung der Zielverteilung über den gesamten Fetch-Prozess und bessere Sichtbarkeit unterrepräsentierter Sektoren.
+- Rollback-Hinweis:
+  - Änderungen in `worker/fetcher.py` zurücknehmen.
+
 ### 2026-03-01 14:22:00 Europe/Madrid | Web (UI/Theme)
 - Änderung:
   - Theme-Toggle von Text auf Sonne/Mond-Icon umgestellt (inkl. passender ARIA-Labels je Modus).

@@ -894,13 +894,25 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
     total_collected = len(collected_queries) + len(collected_direct)
     if total_collected < max_raw:
         remaining_slots = max_raw - total_collected
-        if remaining_slots > 0:
-            direct_fill = overflow_direct[:remaining_slots]
+        if remaining_slots > 0 and overflow_direct:
+            direct_fill, direct_reject = _partition_stories_with_sector_limits(
+                overflow_direct,
+                remaining_for_kind=remaining_slots,
+                sector_limits=direct_sector_limits,
+                accepted_by_sector=accepted_direct_by_sector,
+            )
             collected_direct.extend(direct_fill)
+            overflow_direct = direct_reject
             remaining_slots -= len(direct_fill)
-        if remaining_slots > 0:
-            query_fill = overflow_queries[:remaining_slots]
+        if remaining_slots > 0 and overflow_queries:
+            query_fill, query_reject = _partition_stories_with_sector_limits(
+                overflow_queries,
+                remaining_for_kind=remaining_slots,
+                sector_limits=query_sector_limits,
+                accepted_by_sector=accepted_query_by_sector,
+            )
             collected_queries.extend(query_fill)
+            overflow_queries = query_reject
 
     collected = collected_direct + collected_queries
     if len(collected) > max_raw:
@@ -922,5 +934,9 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
     )
     logger.warning("Fetch sector split (query): %s", dict(sorted(accepted_query_by_sector.items())))
     logger.warning("Fetch sector split (direct): %s", dict(sorted(accepted_direct_by_sector.items())))
+    final_sector_counts: dict[str, int] = defaultdict(int)
+    for story in collected:
+        final_sector_counts[story.sector] += 1
+    logger.warning("Fetch sector split (final): %s", dict(sorted(final_sector_counts.items())))
 
     return collected
