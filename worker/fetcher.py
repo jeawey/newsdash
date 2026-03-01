@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from functools import lru_cache
 import re
 from typing import Optional
@@ -9,6 +9,7 @@ import feedparser
 from dateutil import parser as date_parser
 
 from worker.config import DirectFeedConfig, QueryConfig, SourceConfig, iter_direct_feeds, iter_queries
+from worker.translate import translate_to_german
 from worker.types import RawStory
 from worker.utils import build_summary, extract_domain, google_news_rss_url
 
@@ -16,6 +17,18 @@ _RSS_VERZEICHNIS_HOST = "www.rss-verzeichnis.de"
 _RSS_HINT_RE = re.compile(r"RSS-Feed-URL.*?href=[\"']([^\"']+)[\"']", re.IGNORECASE | re.DOTALL)
 _HREF_RE = re.compile(r"href=[\"']([^\"']+)[\"']", re.IGNORECASE)
 _FEED_FETCH_TIMEOUT_SECONDS = 8
+_TZINFOS = {
+    "UTC": timezone.utc,
+    "GMT": timezone.utc,
+    "EST": timezone(timedelta(hours=-5)),
+    "EDT": timezone(timedelta(hours=-4)),
+    "CST": timezone(timedelta(hours=-6)),
+    "CDT": timezone(timedelta(hours=-5)),
+    "MST": timezone(timedelta(hours=-7)),
+    "MDT": timezone(timedelta(hours=-6)),
+    "PST": timezone(timedelta(hours=-8)),
+    "PDT": timezone(timedelta(hours=-7)),
+}
 
 _SECTOR_DEFAULT_SUBTOPIC: dict[str, str] = {
     "Sustainability": "Global Regulations",
@@ -132,6 +145,53 @@ _SECTOR_KEYWORDS: dict[str, tuple[str, ...]] = {
 }
 
 
+def _term_hits(text: str, terms: tuple[str, ...]) -> int:
+    score = 0
+    for term in terms:
+        t = term.strip().lower()
+        if not t:
+            continue
+        if len(t) <= 3:
+            pattern = r"\b" + re.escape(t) + r"\b"
+            if re.search(pattern, text):
+                score += 1
+        elif " " in t:
+            if t in text:
+                score += 1
+        else:
+            pattern = r"\b" + re.escape(t) + r"\b"
+            if re.search(pattern, text):
+                score += 1
+    return score
+
+
+def _classify_sector_and_subtopic(*, base_sector: str, title: str, summary: str, url: str, source_name: str) -> tuple[str, str]:
+    text = f"{title} {summary} {url} {source_name}".lower()
+
+    # Location rooms override global thematic sectors when explicit.
+    if _term_hits(text, _SECTOR_KEYWORDS["Hamburg"]) > 0:
+        return "Hamburg", _SECTOR_DEFAULT_SUBTOPIC["Hamburg"]
+    if _term_hits(text, _SECTOR_KEYWORDS["Mallorca"]) > 0:
+        return "Mallorca", _SECTOR_DEFAULT_SUBTOPIC["Mallorca"]
+    if _term_hits(text, _SECTOR_KEYWORDS["Kenya"]) > 0:
+        return "Kenya", _SECTOR_DEFAULT_SUBTOPIC["Kenya"]
+
+    best_sector = base_sector
+    best_score = 0
+    for sector, terms in _SECTOR_KEYWORDS.items():
+        if sector in {"Hamburg", "Mallorca", "Kenya"}:
+            continue
+        hits = _term_hits(text, terms)
+        if hits > best_score:
+            best_score = hits
+            best_sector = sector
+
+    if best_score <= 0:
+        best_sector = "Politics"
+
+    return best_sector, _SECTOR_DEFAULT_SUBTOPIC.get(best_sector, "Global Power Moves")
+
+
 def _looks_like_feed_url(url: str) -> bool:
     lowered = url.lower()
     return (
@@ -209,27 +269,13 @@ def _infer_sector_from_content(
     ):
         return base_sector, _SECTOR_DEFAULT_SUBTOPIC.get(base_sector, "Global Power Moves")
 
-    text = f"{title} {summary} {url} {source_name}".lower()
-
-    # Prioritize location rooms when location intent is explicit.
-    if any(k in text for k in _SECTOR_KEYWORDS["Hamburg"]):
-        return "Hamburg", _SECTOR_DEFAULT_SUBTOPIC["Hamburg"]
-    if any(k in text for k in _SECTOR_KEYWORDS["Mallorca"]):
-        return "Mallorca", _SECTOR_DEFAULT_SUBTOPIC["Mallorca"]
-    if any(k in text for k in _SECTOR_KEYWORDS["Kenya"]):
-        return "Kenya", _SECTOR_DEFAULT_SUBTOPIC["Kenya"]
-
-    scores: dict[str, int] = {}
-    for sector, terms in _SECTOR_KEYWORDS.items():
-        if sector in {"Hamburg", "Mallorca", "Kenya"}:
-            continue
-        scores[sector] = sum(1 for t in terms if t in text)
-
-    best_sector = max(scores, key=scores.get) if scores else base_sector
-    if scores.get(best_sector, 0) <= 0:
-        best_sector = "Politics"
-
-    return best_sector, _SECTOR_DEFAULT_SUBTOPIC.get(best_sector, "Global Power Moves")
+    return _classify_sector_and_subtopic(
+        base_sector=base_sector,
+        title=title,
+        summary=summary,
+        url=url,
+        source_name=source_name,
+    )
 
 
 def _parse_published(entry: dict) -> datetime:
@@ -238,7 +284,7 @@ def _parse_published(entry: dict) -> datetime:
         return datetime.now(timezone.utc)
 
     try:
-        parsed = date_parser.parse(raw)
+        parsed = date_parser.parse(raw, tzinfos=_TZINFOS)
     except (ValueError, TypeError):
         return datetime.now(timezone.utc)
 
@@ -263,16 +309,25 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
         return None
 
     summary = build_summary(entry.get("summary", ""))
+    inferred_sector, inferred_subtopic = _classify_sector_and_subtopic(
+        base_sector=query.sector,
+        title=title,
+        summary=summary,
+        url=url,
+        source_name=source_name,
+    )
+    title_de = translate_to_german(title)
+    summary_de = translate_to_german(summary)
     published_at = _parse_published(entry)
 
     return RawStory(
-        sector=query.sector,
-        subtopic=query.subtopic,
-        title=title,
+        sector=inferred_sector,
+        subtopic=inferred_subtopic,
+        title=title_de,
         url=url,
         source_name=source_name,
         source_domain=source_domain,
-        summary=summary,
+        summary=summary_de,
         published_at=published_at,
     )
 
@@ -302,16 +357,18 @@ def _to_story_from_feed(feed_cfg: DirectFeedConfig, entry: dict, excluded_domain
         url=url,
         source_name=source_name,
     )
+    title_de = translate_to_german(title)
+    summary_de = translate_to_german(summary)
     published_at = _parse_published(entry)
 
     return RawStory(
         sector=inferred_sector,
         subtopic=inferred_subtopic,
-        title=title,
+        title=title_de,
         url=url,
         source_name=source_name,
         source_domain=source_domain,
-        summary=summary,
+        summary=summary_de,
         published_at=published_at,
     )
 

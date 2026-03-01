@@ -21,8 +21,29 @@ settings = get_settings()
 logger = logging.getLogger(__name__)
 
 
+def _cleanup_stale_running_jobs(db, *, stale_after_minutes: int = 45) -> int:
+    cutoff = datetime.now(pytz.utc) - timedelta(minutes=stale_after_minutes)
+    stale = db.execute(
+        select(JobRun).where(
+            JobRun.status == "running",
+            JobRun.started_at < cutoff,
+        )
+    ).scalars().all()
+    for run in stale:
+        run.status = "failed"
+        run.finished_at = datetime.now(pytz.utc)
+        run.message = "auto-cleanup stale running job"
+    if stale:
+        db.commit()
+    return len(stale)
+
+
 def run_pipeline(run_type: str) -> None:
     db = SessionLocal()
+    cleaned = _cleanup_stale_running_jobs(db, stale_after_minutes=45)
+    if cleaned:
+        logger.warning("Auto-cleaned %s stale running job(s) before new run", cleaned)
+
     now_utc = datetime.now(pytz.utc)
     running_cutoff = now_utc - timedelta(minutes=45)
     active_run = db.execute(
@@ -92,6 +113,11 @@ def start_scheduler() -> None:
     )
 
     Base.metadata.create_all(bind=engine)
+
+    with SessionLocal() as db:
+        cleaned = _cleanup_stale_running_jobs(db, stale_after_minutes=45)
+        if cleaned:
+            logger.warning("Auto-cleaned %s stale running job(s) on scheduler start", cleaned)
 
     if settings.run_ingestion_on_startup:
         try:

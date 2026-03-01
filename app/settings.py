@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     hot_story_window_hours: int = Field(default=48, alias="HOT_STORY_WINDOW_HOURS")
     max_story_age_hours: int = Field(default=48, alias="MAX_STORY_AGE_HOURS")
     run_ingestion_on_startup: bool = Field(default=True, alias="RUN_INGESTION_ON_STARTUP")
+    hard_relevance_gate_enabled: bool = Field(default=True, alias="HARD_RELEVANCE_GATE_ENABLED")
 
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()

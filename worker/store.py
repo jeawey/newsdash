@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+import re
 
 import pytz
 from sqlalchemy import select
@@ -9,6 +10,162 @@ from app.models import JobRun, Story
 from app.settings import get_settings
 from worker.types import ScoredStory
 from worker.utils import canonicalize_url, fingerprint_title_loose
+
+
+_SECTOR_RELEVANCE_TERMS: dict[str, tuple[str, ...]] = {
+    "AI": (
+        "ai",
+        "artificial intelligence",
+        "machine learning",
+        "openai",
+        "anthropic",
+        "llm",
+        "gpt",
+        "model",
+        "inference",
+        "datacenter",
+        "gpu",
+    ),
+    "Crypto": (
+        "crypto",
+        "bitcoin",
+        "ethereum",
+        "blockchain",
+        "token",
+        "stablecoin",
+        "defi",
+        "etf",
+        "exchange",
+    ),
+    "Biotechnologie": (
+        "biotech",
+        "biotechnology",
+        "pharma",
+        "clinical trial",
+        "gene",
+        "crispr",
+        "genomic",
+        "medtech",
+        "diagnostics",
+        "microbiome",
+    ),
+    "Cannabis": (
+        "cannabis",
+        "marijuana",
+        "hemp",
+        "cbd",
+        "thc",
+        "social club",
+        "legalization",
+        "medical cannabis",
+    ),
+    "Frequenzen": (
+        "spectrum",
+        "rf",
+        "wireless",
+        "telecom",
+        "5g",
+        "6g",
+        "antenna",
+        "radar",
+        "satellite",
+        "interference",
+    ),
+    "Sustainability": (
+        "sustainab",
+        "climate",
+        "renewable",
+        "emission",
+        "net zero",
+        "esg",
+        "decarbon",
+        "circular economy",
+        "energy transition",
+    ),
+    "Hamburg": (
+        "hamburg",
+        "senat",
+        "bürgerschaft",
+        "st pauli",
+        "kiez",
+        "reeperbahn",
+        "hafen",
+        "verkehr",
+        "bezirk",
+    ),
+    "Mallorca": (
+        "mallorca",
+        "majorca",
+        "palma",
+        "balearen",
+        "balear",
+        "manacor",
+        "santanyi",
+        "tourismus",
+        "consell",
+    ),
+    "Kenya": (
+        "kenya",
+        "nairobi",
+        "mombasa",
+        "kisumu",
+        "east africa",
+        "parliament",
+        "county",
+    ),
+    "Politics": (
+        "election",
+        "parliament",
+        "government",
+        "policy",
+        "minister",
+        "diplomacy",
+        "sanction",
+        "conflict",
+        "war",
+        "trade",
+    ),
+}
+
+_SECTOR_MIN_HITS: dict[str, int] = {
+    "AI": 2,
+    "Crypto": 2,
+    "Biotechnologie": 2,
+    "Cannabis": 2,
+    "Frequenzen": 2,
+    "Sustainability": 2,
+    "Hamburg": 1,
+    "Mallorca": 1,
+    "Kenya": 1,
+    "Politics": 1,
+}
+
+
+def _count_sector_hits(sector: str, text: str) -> int:
+    terms = _SECTOR_RELEVANCE_TERMS.get(sector, ())
+    hits = 0
+    for term in terms:
+        token = term.lower().strip()
+        if not token:
+            continue
+        if len(token) <= 3:
+            if re.search(r"\b" + re.escape(token) + r"\b", text):
+                hits += 1
+        elif " " in token:
+            if token in text:
+                hits += 1
+        else:
+            if re.search(r"\b" + re.escape(token) + r"\b", text):
+                hits += 1
+    return hits
+
+
+def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
+    if not enabled:
+        return True
+    required = _SECTOR_MIN_HITS.get(story.sector, 1)
+    text = f"{story.title} {story.summary}".lower()
+    return _count_sector_hits(story.sector, text) >= required
 
 
 class RunLogger:
@@ -91,6 +248,8 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             enforce_domain_cap: bool,
             enforce_loose_dedupe: bool = True,
         ) -> bool:
+            if not _passes_hard_relevance_gate(story, settings.hard_relevance_gate_enabled):
+                return False
             if story.score < settings.min_story_score:
                 return False
             if story.source_domain in social_domains:

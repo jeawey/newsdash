@@ -354,10 +354,11 @@ main {
 
 .chip-row {
   margin: 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 0.45rem;
-  flex-wrap: wrap;
+  column-gap: 0.45rem;
+  row-gap: 0.34rem;
 }
 
 .story-grid {
@@ -471,7 +472,8 @@ main {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  margin-left: auto;
+  grid-column: 1 / -1;
+  justify-self: start;
   padding: 0.18rem 0.48rem;
   font-size: 0.68rem;
   font-weight: 700;

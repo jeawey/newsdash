@@ -1,6 +1,7 @@
 import math
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+import re
 
 from app.settings import get_settings
 from worker.types import RawStory, ScoredStory
@@ -180,7 +181,21 @@ def _keyword_boost(sector: str, title: str) -> float:
         ],
     }
     sector_terms = keywords.get(sector, [])
-    return min(sum(0.2 for k in sector_terms if k in t), 1.0)
+    hits = 0
+    for k in sector_terms:
+        token = k.lower().strip()
+        if not token:
+            continue
+        if len(token) <= 3:
+            if re.search(r"\b" + re.escape(token) + r"\b", t):
+                hits += 1
+        elif " " in token:
+            if token in t:
+                hits += 1
+        else:
+            if re.search(r"\b" + re.escape(token) + r"\b", t):
+                hits += 1
+    return min(hits * 0.2, 1.0)
 
 
 def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]) -> list[ScoredStory]:
