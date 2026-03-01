@@ -55,6 +55,14 @@ sectors:
     - name: "Elections & Summits"
       query: "elections coalition government summit G7 NATO UN latest decisions"
 
+  Frequenzen:
+    - name: "HF Technology"
+      query: "high frequency technology RF microwave signal innovation latest"
+    - name: "Spectrum Policy"
+      query: "spectrum allocation regulation auction telecom frequencies update"
+    - name: "Resonance & Applications"
+      query: "resonance frequency applications sensors medical industry breakthrough"
+
 trusted_domains:
   reuters.com: 2.5
   bloomberg.com: 2.3

@@ -23,12 +23,20 @@ settings = get_settings()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
+def _normalize_sector_name(sector: str) -> str:
+    aliases = {
+        "Biotechnology": "Biotechnologie",
+    }
+    return aliases.get(sector, sector)
+
+
 def _configured_sectors() -> list[str]:
     config = load_source_config()
     ordered: list[str] = []
     for query in config.queries:
-        if query.sector not in ordered:
-            ordered.append(query.sector)
+        normalized = _normalize_sector_name(query.sector)
+        if normalized not in ordered:
+            ordered.append(normalized)
     return ordered
 
 
@@ -63,14 +71,18 @@ def get_dashboard_data(
         .order_by(desc(Story.score))
     ).all()
 
-    sectors: dict[str, list[StoryOut]] = {}
+    configured_sectors = _configured_sectors()
+    sectors: dict[str, list[StoryOut]] = {sector: [] for sector in configured_sectors}
     for story in stories:
-        sectors.setdefault(story.sector, []).append(StoryOut.model_validate(story))
+        story_out = StoryOut.model_validate(story).model_copy(
+            update={"sector": _normalize_sector_name(story.sector)}
+        )
+        sectors.setdefault(story_out.sector, []).append(story_out)
 
-    for sector in _configured_sectors():
-        sectors.setdefault(sector, [])
-
-    top_stories = [StoryOut.model_validate(s) for s in stories[:10]]
+    top_stories = [
+        StoryOut.model_validate(s).model_copy(update={"sector": _normalize_sector_name(s.sector)})
+        for s in stories[:10]
+    ]
     return DashboardResponse(snapshot_date=target_date, sectors=sectors, top_stories=top_stories)
 
 
@@ -112,7 +124,7 @@ def dashboard(
             "latest_story_ids": latest_story_ids,
             "top_stories": payload.top_stories,
             "sectors": payload.sectors,
-            "configured_sectors": list(payload.sectors.keys()),
+            "configured_sectors": _configured_sectors(),
             "sector_colors": SECTOR_COLORS,
             "asset_prefix": "/static",
         },

@@ -6,4 +6,5 @@ SECTOR_COLORS: dict[str, str] = {
     "Cannabis": "#9de870",
     "Kenya": "#ffb26f",
     "Politics": "#ff7d7d",
+    "Frequenzen": "#ffc36d",
 }
