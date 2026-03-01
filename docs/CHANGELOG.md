@@ -446,3 +446,20 @@ Für jeden Eintrag:
   - Mehr verfügbare Stories in unterfüllten Sektoren (`Frequenzen`, `Hamburg`, `Kenya`, `Mallorca`, `Biotechnologie`, `Cannabis`) bei weiterhin stabiler Politics-Qualität.
 - Rollback-Hinweis:
   - Änderungen in `app/settings.py` und `worker/store.py` zurücksetzen.
+
+### 2026-03-01 22:06:10 CET | Tuning (Balance Pass 2: Backfill + Domain Caps + Sector Targets)
+- Änderung:
+  - `worker/scoring.py`:
+    - Freshness- und Fallback-Fenster für mehrere Sektoren weiter erweitert (u. a. `Kenya`, `Frequenzen`, `Sustainability`, `Biotechnologie`, `Cannabis`, `AI`, `Crypto`).
+    - Mindestbestand je Sektor für Scoring-Backfill erhöht (`_SECTOR_MIN_SCORABLE_ITEMS`), damit unterversorgte Sektoren konsequenter mit älteren, noch relevanten Kandidaten aufgefüllt werden.
+  - `worker/store.py`:
+    - sektor-spezifische Mindestscore-Schwellen weiter feinjustiert (`AI`, `Crypto`, `Frequenzen`, `Kenya`, `Cannabis`).
+    - Relaxed-Dedupe auf zusätzliche unterversorgte Sektoren erweitert (`Kenya`, `Sustainability`).
+    - erweiterte Domain-Caps auf mehr Sektoren ausgedehnt und Erhöhung von `+2` auf `+4` gesetzt.
+    - Mindest-Insert-Targets pro Sektor pro Run erhöht (`sector_minimum_targets`), um Breite systematisch aufzubauen.
+- Grund:
+  - Nach Pass 1 waren weiterhin `min_story_score`, `domain_cap` und zu dünner sektoraler Backfill die limitierenden Faktoren in mehreren Sektoren.
+- Erwarteter Effekt:
+  - Gleichmäßigere sektorale Verteilung mit höherem Netto-Inserts in `Kenya`, `Frequenzen`, `Cannabis`, `Biotechnologie`, `Sustainability` sowie stabiler Versorgung in `AI`/`Crypto`.
+- Rollback-Hinweis:
+  - Änderungen in `worker/scoring.py` und `worker/store.py` auf den vorherigen Stand zurücksetzen.

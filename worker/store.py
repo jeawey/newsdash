@@ -168,11 +168,13 @@ _SECTOR_MIN_HITS: dict[str, int] = {
 }
 
 _SECTOR_MIN_STORY_SCORE: dict[str, float] = {
+    "AI": 0.80,
+    "Crypto": 0.80,
     "Biotechnologie": 0.55,
     "Sustainability": 0.60,
-    "Frequenzen": 0.45,
-    "Kenya": 0.55,
-    "Cannabis": 0.60,
+    "Frequenzen": 0.40,
+    "Kenya": 0.45,
+    "Cannabis": 0.55,
     "Mallorca": 0.70,
     "Hamburg": 0.70,
 }
@@ -342,20 +344,20 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         per_sector[story.sector].append(story)
 
     local_quota_sectors = {"Hamburg", "Mallorca"}
-    relaxed_dedupe_sectors = {"Biotechnologie", "Frequenzen", "Cannabis"}
-    expanded_domain_cap_sectors = {"Biotechnologie", "Frequenzen", "Cannabis"}
+    relaxed_dedupe_sectors = {"Biotechnologie", "Frequenzen", "Cannabis", "Kenya", "Sustainability"}
+    expanded_domain_cap_sectors = {"AI", "Crypto", "Biotechnologie", "Frequenzen", "Cannabis", "Sustainability", "Kenya", "Mallorca", "Hamburg"}
     social_domains = {"x.com", "reddit.com", "linkedin.com", "substack.com"}
     sector_minimum_targets: dict[str, int] = {
-        "AI": 6,
-        "Crypto": 6,
-        "Sustainability": 6,
-        "Biotechnologie": 6,
-        "Cannabis": 6,
-        "Frequenzen": 6,
-        "Politics": 6,
-        "Kenya": 6,
-        "Hamburg": 6,
-        "Mallorca": 6,
+        "AI": 10,
+        "Crypto": 10,
+        "Sustainability": 10,
+        "Biotechnologie": 10,
+        "Cannabis": 10,
+        "Frequenzen": 8,
+        "Politics": 8,
+        "Kenya": 8,
+        "Hamburg": 8,
+        "Mallorca": 10,
     }
     inserted_ids: list[int] = []
     sectors_to_process = set(per_sector.keys()) | set(sector_minimum_targets.keys())
@@ -431,7 +433,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 return False, "duplicate_loose_fingerprint"
             domain_cap = settings.max_items_per_domain_per_sector
             if sector in expanded_domain_cap_sectors:
-                domain_cap += 2
+                domain_cap += 4
             if enforce_domain_cap and domain_counts[story.source_domain] >= domain_cap:
                 return False, "domain_cap"
             return True, None

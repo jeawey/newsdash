@@ -112,40 +112,40 @@ _FINAL_SCORE_WEIGHTS: dict[str, float] = {
 }
 
 _SECTOR_MAX_AGE_HOURS: dict[str, int] = {
-    "AI": 72,
-    "Crypto": 72,
-    "Sustainability": 240,
-    "Biotechnologie": 168,
-    "Cannabis": 168,
-    "Frequenzen": 168,
+    "AI": 96,
+    "Crypto": 96,
+    "Sustainability": 336,
+    "Biotechnologie": 240,
+    "Cannabis": 240,
+    "Frequenzen": 240,
     "Hamburg": 72,
     "Mallorca": 120,
-    "Kenya": 240,
+    "Kenya": 336,
     "Politics": 72,
 }
 
 _SECTOR_FALLBACK_MAX_AGE_HOURS: dict[str, int] = {
-    "AI": 168,
-    "Crypto": 168,
-    "Sustainability": 720,
-    "Biotechnologie": 720,
-    "Cannabis": 720,
-    "Frequenzen": 720,
+    "AI": 336,
+    "Crypto": 336,
+    "Sustainability": 1080,
+    "Biotechnologie": 1080,
+    "Cannabis": 1080,
+    "Frequenzen": 1080,
     "Hamburg": 336,
     "Mallorca": 336,
-    "Kenya": 720,
+    "Kenya": 1440,
 }
 
 _SECTOR_MIN_SCORABLE_ITEMS: dict[str, int] = {
-    "AI": 12,
-    "Crypto": 12,
-    "Biotechnologie": 12,
-    "Cannabis": 12,
-    "Frequenzen": 8,
-    "Sustainability": 12,
-    "Hamburg": 8,
-    "Mallorca": 12,
-    "Kenya": 8,
+    "AI": 16,
+    "Crypto": 16,
+    "Biotechnologie": 18,
+    "Cannabis": 18,
+    "Frequenzen": 14,
+    "Sustainability": 18,
+    "Hamburg": 12,
+    "Mallorca": 18,
+    "Kenya": 16,
 }
 
 _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
