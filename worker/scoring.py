@@ -111,6 +111,13 @@ _FINAL_SCORE_WEIGHTS: dict[str, float] = {
     "coherence": 0.10,
 }
 
+_SECTOR_MAX_AGE_HOURS: dict[str, int] = {
+    "Sustainability": 120,
+    "Biotechnologie": 96,
+    "Cannabis": 96,
+    "Frequenzen": 96,
+}
+
 _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
     "AI": (
         "openai",
@@ -690,10 +697,11 @@ def _log_score_explainer(candidates: list[dict[str, Any]], *, limit: int) -> Non
 def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]) -> list[ScoredStory]:
     settings = get_settings()
     now = datetime.now(timezone.utc)
-    freshness_cutoff = now - timedelta(hours=settings.max_story_age_hours)
 
     grouped: dict[tuple[str, str], list[RawStory]] = defaultdict(list)
     for story in raw_stories:
+        max_age_hours = _SECTOR_MAX_AGE_HOURS.get(story.sector, settings.max_story_age_hours)
+        freshness_cutoff = now - timedelta(hours=max_age_hours)
         if story.published_at < freshness_cutoff:
             continue
         fp = fingerprint_title(story.title)

@@ -173,6 +173,21 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `worker/fetcher.py` zurücknehmen.
 
+### 2026-03-01 20:36:30 Europe/Madrid | Worker (Sektor-spezifisches Freshness-Fenster im Scoring)
+- Änderung:
+  - Freshness-Filter im Scoring von globalem Zeitfenster auf sektor-spezifische Max-Age-Logik erweitert.
+  - Für unterrepräsentierte Sektoren wurden längere Zeitfenster aktiviert:
+    - `Sustainability`: 120h
+    - `Biotechnologie`: 96h
+    - `Cannabis`: 96h
+    - `Frequenzen`: 96h
+- Grund:
+  - Trotz vorhandener Raw-Stories wurden diese Sektoren durch das harte globale 48h-Fenster vor dem Scoring überproportional aussortiert.
+- Erwarteter Effekt:
+  - Mehr scorbare Kandidaten in den betroffenen Sektoren und damit bessere Chance auf persistierte Dashboard-Einträge.
+- Rollback-Hinweis:
+  - Änderungen in `worker/scoring.py` zurücknehmen.
+
 ### 2026-03-01 14:22:00 Europe/Madrid | Web (UI/Theme)
 - Änderung:
   - Theme-Toggle von Text auf Sonne/Mond-Icon umgestellt (inkl. passender ARIA-Labels je Modus).
