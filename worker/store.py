@@ -43,6 +43,21 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         per_sector[story.sector].append(story)
 
     local_quota_sectors = {"Hamburg", "Mallorca"}
+    relaxed_dedupe_sectors = {"Biotechnologie", "Frequenzen", "Cannabis"}
+    expanded_domain_cap_sectors = {"Biotechnologie", "Frequenzen", "Cannabis"}
+    social_domains = {"x.com", "reddit.com", "linkedin.com", "substack.com"}
+    sector_minimum_targets: dict[str, int] = {
+        "AI": 12,
+        "Crypto": 10,
+        "Sustainability": 8,
+        "Biotechnologie": 8,
+        "Cannabis": 8,
+        "Frequenzen": 8,
+        "Politics": 8,
+        "Kenya": 8,
+        "Hamburg": 12,
+        "Mallorca": 12,
+    }
     inserted: list[Story] = []
     for sector, sector_stories in per_sector.items():
         existing_rows = db.execute(
@@ -61,22 +76,40 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         sorted_sector_stories = sorted(sector_stories, key=lambda s: s.score, reverse=True)
 
         sector_limit = settings.max_items_per_sector
+        sector_target = sector_minimum_targets.get(sector, settings.min_items_per_sector_target)
+        sector_target = min(sector_target, sector_limit)
         if sector in local_quota_sectors:
             subtopics = {story.subtopic for story in sorted_sector_stories}
-            sector_limit = max(sector_limit, len(subtopics) * settings.min_items_per_local_subtopic)
+            local_quota_cap = len(subtopics) * settings.min_items_per_local_subtopic
+            sector_target = min(sector_limit, max(sector_target, local_quota_cap))
 
         sector_inserted = 0
 
-        def _can_insert(story: ScoredStory, *, enforce_domain_cap: bool) -> bool:
+        def _can_insert(
+            story: ScoredStory,
+            *,
+            enforce_domain_cap: bool,
+            enforce_loose_dedupe: bool = True,
+        ) -> bool:
+            if story.score < settings.min_story_score:
+                return False
+            if story.source_domain in social_domains:
+                if story.score < settings.min_social_story_score:
+                    return False
+                if story.mentions < settings.min_social_mentions:
+                    return False
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)
             if url_key in seen_urls:
                 return False
             if story.fingerprint in seen_fingerprints:
                 return False
-            if loose_fp in seen_loose_fingerprints:
+            if enforce_loose_dedupe and sector not in relaxed_dedupe_sectors and loose_fp in seen_loose_fingerprints:
                 return False
-            if enforce_domain_cap and domain_counts[story.source_domain] >= settings.max_items_per_domain_per_sector:
+            domain_cap = settings.max_items_per_domain_per_sector
+            if sector in expanded_domain_cap_sectors:
+                domain_cap += 2
+            if enforce_domain_cap and domain_counts[story.source_domain] >= domain_cap:
                 return False
             return True
 
@@ -132,6 +165,18 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             if not _can_insert(story, enforce_domain_cap=True):
                 continue
             _insert_story(story)
+
+        if sector_inserted < sector_target:
+            for story in sorted_sector_stories:
+                if sector_inserted >= sector_target or sector_inserted >= sector_limit:
+                    break
+                if not _can_insert(
+                    story,
+                    enforce_domain_cap=False,
+                    enforce_loose_dedupe=False,
+                ):
+                    continue
+                _insert_story(story)
 
     db.commit()
     return inserted

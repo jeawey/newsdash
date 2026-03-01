@@ -22,7 +22,8 @@ Sectors covered:
   - Morning job at 08:00
   - Hourly breaking-news job
 - Ingestion pipeline:
-  - Pulls from query-based RSS feeds
+  - Pulls from query-based RSS feeds (Google News RSS)
+  - Pulls from direct publisher RSS feeds (`direct_feeds` in config)
   - Deduplicates by normalized title fingerprint
   - Scores each story by recency, source trust weight, and momentum
 - Telegram integration for digests
@@ -33,6 +34,7 @@ Sectors covered:
 - `app/`: dashboard web app + DB models + API
 - `worker/`: source config, feed fetching, scoring, persistence, scheduler, Telegram alerts
 - `config/sources.yml`: sector taxonomy and trusted/excluded domain policies
+  - includes `direct_feeds` for non-Google source diversity
 - `scripts/`: start scheduler and manual one-shot ingestion
 
 ## Local run
@@ -71,6 +73,11 @@ Notes:
 - Duplicate suppression uses canonical URL + strict and loose title fingerprints per sector/day.
 - Source diversity is enforced with `MAX_ITEMS_PER_DOMAIN_PER_SECTOR` (default `2`).
 - Local quota for `Hamburg` and `Mallorca` enforces at least `MIN_ITEMS_PER_LOCAL_SUBTOPIC` items per category (default `4`) when available.
+- Sector minimum goals are enforced with per-sector targets (fallback: `MIN_ITEMS_PER_SECTOR_TARGET`, default `6`) when enough raw stories are available.
+- Hard cap is `MAX_ITEMS_PER_SECTOR` stories per sector (default `12`), sorted by relevance.
+- Stories with relevance below `MIN_STORY_SCORE` (default `1.0`) are excluded.
+- Social-domain stories require stronger evidence (`MIN_SOCIAL_STORY_SCORE`, `MIN_SOCIAL_MENTIONS`).
+- Display windows: normal stories in last `24h`, hot stories (`score >= HOURLY_BREAKING_THRESHOLD`) up to `48h`.
 
 ## GitHub Pages deployment (public, free)
 

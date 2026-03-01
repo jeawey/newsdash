@@ -109,9 +109,26 @@ def get_dashboard_data(
         .order_by(desc(Story.score))
     ).all()
 
+    now_utc = datetime.now(pytz.utc)
+    normal_cutoff = now_utc - timedelta(hours=settings.normal_story_window_hours)
+    hot_cutoff = now_utc - timedelta(hours=settings.hot_story_window_hours)
+    filtered_stories: list[Story] = []
+    for story in stories:
+        published = story.published_at
+        if published.tzinfo is None:
+            published = published.replace(tzinfo=pytz.utc)
+        else:
+            published = published.astimezone(pytz.utc)
+
+        is_hot = story.score >= settings.hourly_breaking_threshold
+        if is_hot and published >= hot_cutoff:
+            filtered_stories.append(story)
+        elif (not is_hot) and published >= normal_cutoff:
+            filtered_stories.append(story)
+
     configured_sectors = _configured_sectors()
     sectors: dict[str, list[StoryOut]] = {sector: [] for sector in configured_sectors}
-    for story in stories:
+    for story in filtered_stories:
         story_out = StoryOut.model_validate(story).model_copy(
             update={"sector": _normalize_sector_name(story.sector)}
         )
@@ -119,7 +136,7 @@ def get_dashboard_data(
 
     top_stories = [
         StoryOut.model_validate(s).model_copy(update={"sector": _normalize_sector_name(s.sector)})
-        for s in stories[:10]
+        for s in filtered_stories[:10]
     ]
     return DashboardResponse(snapshot_date=target_date, sectors=sectors, top_stories=top_stories)
 

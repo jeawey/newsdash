@@ -22,10 +22,16 @@ class Settings(BaseSettings):
     telegram_chat_id: Optional[str] = Field(default=None, alias="TELEGRAM_CHAT_ID")
 
     hourly_breaking_threshold: float = Field(default=7.0, alias="HOURLY_BREAKING_THRESHOLD")
-    max_items_per_sector: int = Field(default=20, alias="MAX_ITEMS_PER_SECTOR")
+    max_items_per_sector: int = Field(default=12, alias="MAX_ITEMS_PER_SECTOR")
     max_items_per_domain_per_sector: int = Field(default=3, alias="MAX_ITEMS_PER_DOMAIN_PER_SECTOR")
+    min_items_per_sector_target: int = Field(default=6, alias="MIN_ITEMS_PER_SECTOR_TARGET")
     min_items_per_local_subtopic: int = Field(default=4, alias="MIN_ITEMS_PER_LOCAL_SUBTOPIC")
-    max_story_age_hours: int = Field(default=72, alias="MAX_STORY_AGE_HOURS")
+    min_story_score: float = Field(default=1.0, alias="MIN_STORY_SCORE")
+    min_social_story_score: float = Field(default=3.0, alias="MIN_SOCIAL_STORY_SCORE")
+    min_social_mentions: int = Field(default=3, alias="MIN_SOCIAL_MENTIONS")
+    normal_story_window_hours: int = Field(default=24, alias="NORMAL_STORY_WINDOW_HOURS")
+    hot_story_window_hours: int = Field(default=48, alias="HOT_STORY_WINDOW_HOURS")
+    max_story_age_hours: int = Field(default=48, alias="MAX_STORY_AGE_HOURS")
     run_ingestion_on_startup: bool = Field(default=True, alias="RUN_INGESTION_ON_STARTUP")
 
     def resolved_source_config_path(self) -> Path:
