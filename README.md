@@ -56,6 +56,21 @@ Sectors covered:
 2. `docker compose up --build`
 3. Dashboard: `http://localhost:8000`
 
+### Verify scheduler/ingestion on VPS
+
+- Check worker is running:
+  - `docker compose ps`
+- Tail worker logs:
+  - `docker compose logs -f worker`
+- Confirm ingestion runs from API:
+  - `curl http://<your-host>/api/job-runs`
+
+Notes:
+- The hourly scheduled run is at minute `05` in your configured timezone.
+- On worker startup, one ingestion run is executed immediately by default (`RUN_INGESTION_ON_STARTUP=true`).
+- Duplicate suppression uses canonical URL + strict and loose title fingerprints per sector/day.
+- Source diversity is enforced with `MAX_ITEMS_PER_DOMAIN_PER_SECTOR` (default `2`).
+
 ## GitHub Pages deployment (public, free)
 
 This repo now includes:

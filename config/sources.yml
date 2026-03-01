@@ -47,6 +47,22 @@ sectors:
     - name: "AI Product Launches"
       query: "AI product launch frontier model benchmark enterprise adoption"
 
+  Hamburg:
+    - name: "Lokale Politik & Gesetze"
+      query: "Hamburg Gesetzesänderung Bürgerschaft Senat lokal news site:abendblatt.de OR site:ndr.de OR site:mopo.de"
+    - name: "Events & Kultur"
+      query: "Hamburg Veranstaltungen Events Kultur heute site:hamburg.de OR site:ndr.de OR site:abendblatt.de"
+    - name: "Wirtschaft & Stadtleben"
+      query: "Hamburg Wirtschaft Innenstadt Verkehr Wohnen lokale Nachrichten site:abendblatt.de OR site:welt.de OR site:ndr.de"
+
+  Mallorca:
+    - name: "Lokale Politik & Gesetze"
+      query: "Mallorca Gesetzesänderung Balearen Politik local news site:mallorcazeitung.es OR site:ultimahora.es OR site:diariodemallorca.es"
+    - name: "Events & Gesellschaft"
+      query: "Mallorca Veranstaltungen Events Kultur lokale Nachrichten site:mallorcazeitung.es OR site:diariodemallorca.es OR site:ultimahora.es"
+    - name: "Wirtschaft & Tourismus"
+      query: "Mallorca Tourismus Wirtschaft Infrastruktur lokale News site:hosteltur.com OR site:mallorcazeitung.es OR site:diariodemallorca.es"
+
   Kenya:
     - name: "Politics"
       query: "Kenya politics policy latest"
@@ -69,11 +85,36 @@ trusted_domains:
   ft.com: 2.2
   wsj.com: 2.2
   apnews.com: 2.2
+  nytimes.com: 2.1
+  washingtonpost.com: 2.0
+  thetimes.co.uk: 2.0
+  telegraph.co.uk: 2.0
+  theguardian.com: 1.9
+  politico.com: 1.9
+  nzz.ch: 2.1
+  faz.net: 2.0
+  welt.de: 1.9
+  zeit.de: 1.9
+  spiegel.de: 1.9
+  handelsblatt.com: 2.0
+  tagesschau.de: 2.0
+  dw.com: 1.8
+  elpais.com: 1.9
+  elmundo.es: 1.8
+  abc.es: 1.8
   economist.com: 2.1
   nature.com: 2.1
   bbc.com: 1.9
   cnbc.com: 1.8
   coindesk.com: 1.8
+  abendblatt.de: 1.9
+  mopo.de: 1.7
+  ndr.de: 1.9
+  hamburg.de: 1.6
+  mallorcazeitung.es: 1.9
+  ultimahora.es: 1.7
+  diariodemallorca.es: 1.8
+  hosteltur.com: 1.6
 
 excluded_domains:
   - "youtube.com"

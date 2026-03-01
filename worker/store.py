@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.models import JobRun, Story
 from app.settings import get_settings
 from worker.types import ScoredStory
+from worker.utils import canonicalize_url, fingerprint_title_loose
 
 
 class RunLogger:
@@ -43,14 +44,30 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
 
     inserted: list[Story] = []
     for sector, sector_stories in per_sector.items():
-        for story in sorted(sector_stories, key=lambda s: s.score, reverse=True)[: settings.max_items_per_sector]:
-            exists = db.scalar(
-                select(Story.id).where(
-                    Story.url == story.url,
-                    Story.snapshot_date == snapshot_date,
-                )
+        existing_rows = db.execute(
+            select(Story.url, Story.fingerprint, Story.title, Story.source_domain).where(
+                Story.snapshot_date == snapshot_date,
+                Story.sector == sector,
             )
-            if exists:
+        ).all()
+        seen_urls = {canonicalize_url(row.url) for row in existing_rows}
+        seen_fingerprints = {row.fingerprint for row in existing_rows}
+        seen_loose_fingerprints = {fingerprint_title_loose(row.title) for row in existing_rows}
+        domain_counts: dict[str, int] = defaultdict(int)
+        for row in existing_rows:
+            domain_counts[row.source_domain] += 1
+
+        for story in sorted(sector_stories, key=lambda s: s.score, reverse=True)[: settings.max_items_per_sector]:
+            url_key = canonicalize_url(story.url)
+            loose_fp = fingerprint_title_loose(story.title)
+
+            if url_key in seen_urls:
+                continue
+            if story.fingerprint in seen_fingerprints:
+                continue
+            if loose_fp in seen_loose_fingerprints:
+                continue
+            if domain_counts[story.source_domain] >= settings.max_items_per_domain_per_sector:
                 continue
 
             model = Story(
@@ -71,6 +88,10 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             )
             db.add(model)
             inserted.append(model)
+            seen_urls.add(url_key)
+            seen_fingerprints.add(story.fingerprint)
+            seen_loose_fingerprints.add(loose_fp)
+            domain_counts[story.source_domain] += 1
 
     db.commit()
     return inserted

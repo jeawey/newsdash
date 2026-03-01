@@ -44,11 +44,12 @@
       <section class="scope-nav panel glass-panel">
         <div class="panel-head">
           <h2>Nachrichtenraum</h2>
-          <p>Wechsel zwischen global, lokal (Hamburg & Mallorca) und Kenya</p>
+          <p>Wechsel zwischen global, Hamburg, Mallorca und Kenya</p>
         </div>
         <div class="topic-buttons">
           <button class="topic-btn scope-btn is-active" data-scope="global" type="button">Global News</button>
-          <button class="topic-btn scope-btn" data-scope="local" type="button">Lokal: Hamburg & Mallorca</button>
+          <button class="topic-btn scope-btn" data-scope="hamburg" type="button">Hamburg</button>
+          <button class="topic-btn scope-btn" data-scope="mallorca" type="button">Mallorca</button>
           <button class="topic-btn scope-btn" data-scope="kenya" type="button">Kenya</button>
         </div>
       </section>
@@ -56,7 +57,7 @@
       <section class="topic-nav panel glass-panel">
         <div class="panel-head">
           <h2>Themenauswahl</h2>
-          <p>Global-Filter nach Themen (Kenya separat über Nachrichtenraum)</p>
+          <p>Global-Filter nach Themen</p>
         </div>
         <div class="topic-buttons">
           <button class="topic-btn is-active" data-topic="all" type="button">Alle</button>
@@ -74,9 +75,7 @@
         <div class="story-grid top-grid">
           {% if top_stories %}
           {% for story in top_stories %}
-          {% set story_text = ((story.title ~ ' ' ~ story.summary)|lower) %}
-          {% set is_local = ('hamburg' in story_text) or ('mallorca' in story_text) %}
-          <article class="story-card highlight top-card" data-sector="{{ story.sector }}" data-local="{{ 'true' if is_local else 'false' }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
+          <article class="story-card highlight top-card" data-sector="{{ story.sector }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
             <p class="chip-row">
               <span class="chip">{{ story.sector }} · {{ story.subtopic }}</span>
               {% if story.id in latest_ids %}
@@ -111,9 +110,7 @@
         <div class="story-grid">
           {% if stories %}
           {% for story in stories %}
-          {% set story_text = ((story.title ~ ' ' ~ story.summary)|lower) %}
-          {% set is_local = ('hamburg' in story_text) or ('mallorca' in story_text) %}
-          <article class="story-card sector-story" data-role="sector-story" data-sector="{{ sector }}" data-local="{{ 'true' if is_local else 'false' }}">
+          <article class="story-card sector-story" data-role="sector-story" data-sector="{{ sector }}">
             <p class="chip-row">
               <span class="chip">{{ story.subtopic }}</span>
               {% if story.id in latest_ids %}
@@ -180,11 +177,10 @@
 
       function isScopeMatch(cardOrPanel, scope) {
         const sector = cardOrPanel.dataset.sector;
-        const isLocal = cardOrPanel.dataset.local === "true";
-
         if (scope === "kenya") return sector === "Kenya";
-        if (scope === "local") return sector !== "Kenya" && isLocal;
-        return sector !== "Kenya";
+        if (scope === "hamburg") return sector === "Hamburg";
+        if (scope === "mallorca") return sector === "Mallorca";
+        return !["Kenya", "Hamburg", "Mallorca"].includes(sector);
       }
 
       function applyFilters() {
@@ -214,9 +210,7 @@
         }
 
         sectorPanels.forEach((panel) => {
-          const panelScopeVisible = currentScope === "kenya"
-            ? panel.dataset.sector === "Kenya"
-            : panel.dataset.sector !== "Kenya";
+          const panelScopeVisible = isScopeMatch(panel, currentScope);
           const panelTopicVisible = currentScope !== "global" || currentTopic === "all" || panel.dataset.sector === currentTopic;
 
           if (!panelScopeVisible || !panelTopicVisible) {
@@ -226,7 +220,7 @@
 
           const storyCards = Array.from(panel.querySelectorAll(".sector-story"));
           if (storyCards.length === 0) {
-            panel.classList.toggle("is-hidden", currentScope === "local");
+            panel.classList.remove("is-hidden");
             return;
           }
 
@@ -257,6 +251,95 @@
         });
       });
       applyFilters();
+
+      function initRevealAnimations() {
+        const revealTargets = Array.from(
+          document.querySelectorAll(
+            ".hero, .scope-nav, .topic-nav, .top-section, .sector-panel, .relevance-legend, .story-card, .stat-pill"
+          )
+        );
+
+        revealTargets.forEach((el, index) => {
+          el.classList.add("reveal-on-scroll");
+          el.style.setProperty("--reveal-delay", `${Math.min(index * 28, 320)}ms`);
+        });
+
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (reducedMotion || !("IntersectionObserver" in window)) {
+          revealTargets.forEach((el) => el.classList.add("is-visible"));
+          return;
+        }
+
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          { root: null, threshold: 0.14, rootMargin: "0px 0px -8% 0px" }
+        );
+
+        revealTargets.forEach((el) => observer.observe(el));
+      }
+
+      function initSmoothScroll() {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const finePointer = window.matchMedia("(pointer: fine)").matches;
+        const hasTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+        if (reducedMotion || !finePointer || hasTouch) return;
+
+        let targetY = window.scrollY;
+        let currentY = window.scrollY;
+        let rafId = null;
+
+        const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+        const maxDelta = 220;
+        const strength = 1.18;
+        const ease = 0.12;
+
+        const tick = () => {
+          currentY += (targetY - currentY) * ease;
+          if (Math.abs(targetY - currentY) < 0.5) {
+            currentY = targetY;
+            window.scrollTo(0, currentY);
+            rafId = null;
+            return;
+          }
+          window.scrollTo(0, currentY);
+          rafId = window.requestAnimationFrame(tick);
+        };
+
+        window.addEventListener(
+          "wheel",
+          (event) => {
+            if (event.ctrlKey || event.metaKey) return;
+            event.preventDefault();
+
+            const boundedDelta = clamp(event.deltaY, -maxDelta, maxDelta);
+            const scrollMax = document.documentElement.scrollHeight - window.innerHeight;
+            targetY = clamp(targetY + boundedDelta * strength, 0, scrollMax);
+
+            if (!rafId) {
+              rafId = window.requestAnimationFrame(tick);
+            }
+          },
+          { passive: false }
+        );
+      }
+
+      initRevealAnimations();
+      initSmoothScroll();
+
+      const AUTO_REFRESH_MS = 5 * 60 * 1000;
+      setInterval(() => {
+        if (document.visibilityState === "visible") {
+          window.location.reload();
+        }
+      }, AUTO_REFRESH_MS);
     </script>
   </body>
 </html>

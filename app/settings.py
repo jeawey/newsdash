@@ -23,7 +23,9 @@ class Settings(BaseSettings):
 
     hourly_breaking_threshold: float = Field(default=7.0, alias="HOURLY_BREAKING_THRESHOLD")
     max_items_per_sector: int = Field(default=12, alias="MAX_ITEMS_PER_SECTOR")
+    max_items_per_domain_per_sector: int = Field(default=2, alias="MAX_ITEMS_PER_DOMAIN_PER_SECTOR")
     max_story_age_hours: int = Field(default=72, alias="MAX_STORY_AGE_HOURS")
+    run_ingestion_on_startup: bool = Field(default=True, alias="RUN_INGESTION_ON_STARTUP")
 
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()

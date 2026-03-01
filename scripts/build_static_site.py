@@ -125,7 +125,8 @@ def build_site(output_dir: Path, asset_prefix: str, custom_domain: str) -> None:
 
     top_stories = scored_stories[:10]
     sectors = _group_by_sector(scored_stories, settings.max_items_per_sector)
-    configured_topics = [sector for sector in configured_sectors if sector != "Kenya"]
+    room_only = {"Kenya", "Hamburg", "Mallorca"}
+    configured_topics = [sector for sector in configured_sectors if sector not in room_only]
 
     output_dir.mkdir(parents=True, exist_ok=True)
     _copy_assets(output_dir)

@@ -18,8 +18,11 @@ def _keyword_boost(sector: str, title: str) -> float:
         "AI": ["openai", "anthropic", "claude", "perplexity", "model", "ceo", "hiring", "launch"],
         "Crypto": ["crash", "liquidation", "altcoin", "etf", "tariff", "regulation", "bitcoin"],
         "Biotechnology": ["microorganism", "biotech", "device", "invention", "clinical", "startup"],
+        "Biotechnologie": ["mikroorganism", "biotech", "geraet", "invention", "clinical", "startup"],
         "Sustainability": ["regulation", "climate", "startup", "catastrophe", "renewable", "compliance"],
         "Cannabis": ["legalization", "hempcrete", "hempwood", "social club", "germany", "spain"],
+        "Hamburg": ["hamburg", "senat", "buergerschaft", "event", "veranstaltung", "verkehr", "hafen"],
+        "Mallorca": ["mallorca", "balearen", "palma", "consell", "tourismus", "event", "gesetz"],
         "Kenya": ["parliament", "agriculture", "mount kenya", "startup", "policy", "nairobi"],
         "Politics": ["sanctions", "ceasefire", "summit", "tariff", "election", "war", "negotiation"],
     }

@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 import pytz
 from apscheduler.schedulers.blocking import BlockingScheduler
@@ -16,6 +17,7 @@ from worker.telegram import send_digest
 
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 def run_pipeline(run_type: str) -> None:
@@ -72,6 +74,17 @@ def start_scheduler() -> None:
     )
 
     Base.metadata.create_all(bind=engine)
+
+    if settings.run_ingestion_on_startup:
+        try:
+            logger.info("Running startup ingestion once before scheduler loop")
+            run_hourly_breaking()
+        except Exception:  # noqa: BLE001
+            logger.exception("Startup ingestion failed; scheduler will continue running")
+
+    for job in scheduler.get_jobs():
+        logger.info("Scheduler job registered: id=%s next_run=%s", job.id, job.next_run_time)
+
     scheduler.start()
 
 

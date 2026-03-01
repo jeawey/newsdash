@@ -10,7 +10,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Base, Story
+from app.models import Base, JobRun, Story
 from app.database import engine
 from app.presentation import SECTOR_COLORS
 from app.schemas import DashboardResponse, StoryOut
@@ -41,7 +41,8 @@ def _configured_sectors() -> list[str]:
 
 
 def _topic_sectors() -> list[str]:
-    return [sector for sector in _configured_sectors() if sector != "Kenya"]
+    room_only = {"Kenya", "Hamburg", "Mallorca"}
+    return [sector for sector in _configured_sectors() if sector not in room_only]
 
 
 @app.on_event("startup")
@@ -52,6 +53,28 @@ def create_schema() -> None:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/api/job-runs")
+def get_job_runs(
+    limit: int = Query(default=20, ge=1, le=200),
+    db: Session = Depends(get_db),
+) -> dict[str, object]:
+    runs = db.scalars(select(JobRun).order_by(desc(JobRun.started_at)).limit(limit)).all()
+    return {
+        "count": len(runs),
+        "runs": [
+            {
+                "id": run.id,
+                "run_type": run.run_type,
+                "started_at": run.started_at.isoformat() if run.started_at else None,
+                "finished_at": run.finished_at.isoformat() if run.finished_at else None,
+                "status": run.status,
+                "message": run.message,
+            }
+            for run in runs
+        ],
+    }
 
 
 @app.get("/api/stories", response_model=DashboardResponse)
