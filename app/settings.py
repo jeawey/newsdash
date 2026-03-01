@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     normal_story_window_hours: int = Field(default=24, alias="NORMAL_STORY_WINDOW_HOURS")
     hot_story_window_hours: int = Field(default=48, alias="HOT_STORY_WINDOW_HOURS")
     max_story_age_hours: int = Field(default=48, alias="MAX_STORY_AGE_HOURS")
-    run_ingestion_on_startup: bool = Field(default=True, alias="RUN_INGESTION_ON_STARTUP")
+    run_ingestion_on_startup: bool = Field(default=False, alias="RUN_INGESTION_ON_STARTUP")
     hard_relevance_gate_enabled: bool = Field(default=True, alias="HARD_RELEVANCE_GATE_ENABLED")
     job_stale_after_minutes: int = Field(default=20, alias="JOB_STALE_AFTER_MINUTES")
     pipeline_lock_file: str = Field(default="/tmp/newsdash_pipeline.lock", alias="PIPELINE_LOCK_FILE")
