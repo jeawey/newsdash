@@ -15,6 +15,12 @@
       href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
     <link rel="stylesheet" href="{{ assets }}/styles.css" />
   </head>
   <body>
@@ -32,7 +38,7 @@
       </div>
       <div class="hero-right">
         <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false" aria-label="Zum Light Mode wechseln">
-          <span class="theme-toggle-icon" aria-hidden="true">☀️</span>
+          <i class="fa-solid fa-sun theme-toggle-icon" aria-hidden="true"></i>
           <span class="sr-only">Theme wechseln</span>
         </button>
         <div class="stat-pill">
@@ -235,9 +241,9 @@
 
         if (!themeToggle) return;
         const isLight = normalized === "light";
-        const icon = isLight ? "🌙" : "☀️";
+        const iconClass = isLight ? "fa-solid fa-moon theme-toggle-icon" : "fa-solid fa-sun theme-toggle-icon";
         const label = isLight ? "Zum Dark Mode wechseln" : "Zum Light Mode wechseln";
-        themeToggle.innerHTML = `<span class="theme-toggle-icon" aria-hidden="true">${icon}</span><span class="sr-only">${label}</span>`;
+        themeToggle.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span class="sr-only">${label}</span>`;
         themeToggle.setAttribute("aria-pressed", String(isLight));
         themeToggle.setAttribute("aria-label", label);
       }

@@ -208,6 +208,9 @@ h1 {
 }
 
 .theme-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.18rem;
   line-height: 1;
 }
@@ -223,6 +226,10 @@ h1 {
 
 :root[data-theme="light"] .theme-toggle:hover {
   box-shadow: 0 0 0 1px rgba(76, 146, 229, 0.35), 0 14px 28px -20px rgba(46, 113, 194, 0.62);
+}
+
+:root[data-theme="light"] .theme-toggle .theme-toggle-icon {
+  color: #0f3a66;
 }
 
 .stat-pill {
@@ -533,7 +540,7 @@ main {
 }
 
 :root[data-theme="light"] .latest-tag {
-  color: #541919;
+  color: #2f1111;
   border-color: rgba(216, 84, 84, 0.72);
   background: linear-gradient(145deg, rgba(255, 181, 181, 0.86), rgba(255, 132, 132, 0.62));
   box-shadow: 0 0 14px -10px rgba(219, 79, 79, 0.62);
@@ -581,7 +588,7 @@ main {
 
 :root[data-theme="light"] .relevance-pill,
 :root[data-theme="light"] .story-card[data-relevance-tier] .relevance-pill {
-  color: #202c3f;
+  color: #17263a;
 }
 
 .story-card h3 {
@@ -799,7 +806,7 @@ main {
 }
 
 :root[data-theme="light"] .meta {
-  color: #5f7696;
+  color: #2f4867;
 }
 
 :root[data-theme="light"] .relevance-legend {
@@ -809,6 +816,14 @@ main {
     linear-gradient(160deg, rgba(255, 255, 255, 0.86), rgba(247, 252, 255, 0.74));
 }
 
+:root[data-theme="light"] .relevance-legend .panel-head h2 {
+  color: #112946;
+}
+
+:root[data-theme="light"] .relevance-legend .panel-head p {
+  color: #264566;
+}
+
 :root[data-theme="light"] .legend-formula {
   border-color: rgba(118, 156, 205, 0.34);
   background: linear-gradient(145deg, rgba(228, 243, 255, 0.82), rgba(255, 255, 255, 0.9));
@@ -816,11 +831,15 @@ main {
 }
 
 :root[data-theme="light"] .legend-formula p {
-  color: #243f61;
+  color: #1e3a5a;
+}
+
+:root[data-theme="light"] .legend-formula strong {
+  color: #153353;
 }
 
 :root[data-theme="light"] .legend-factor {
-  color: #1f3757;
+  color: #163453;
 }
 
 :root[data-theme="light"] .legend-formula code {
@@ -847,12 +866,12 @@ main {
 }
 
 :root[data-theme="light"] .severity-step span {
-  color: #1e2d43;
+  color: #142b44;
   text-shadow: none;
 }
 
 :root[data-theme="light"] .severity-step small {
-  color: rgba(28, 51, 80, 0.88);
+  color: rgba(18, 46, 76, 0.9);
 }
 
 .sr-only {

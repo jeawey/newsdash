@@ -49,6 +49,18 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `app/templates/index.html` und `app/static/styles.css` rückgängig machen (revert auf vorherigen Commit/Stand).
 
+### 2026-03-01 14:36:00 Europe/Madrid | Web (Theme-Fix Lesbarkeit)
+- Änderung:
+  - Theme-Toggle auf Font-Awesome-Icons (`fa-sun`/`fa-moon`) umgestellt.
+  - Light-Mode-Kontrast weiter erhöht für `HOT`-Badge, Relevanz-Badges und Meta-Zeile mit „Relevanz …“.
+  - Relevanz-Legende im Light Mode weiter nachgeschärft (Header, Fließtext, `strong`, Skalenzahlen und Label).
+- Grund:
+  - Gewünschte Textfarbänderungen waren visuell nicht deutlich genug bzw. betrafen bisher nicht alle relevanten Elemente.
+- Erwarteter Effekt:
+  - Klar sichtbare Icon-Umschaltung und deutlich bessere Lesbarkeit der Relevanz-bezogenen Texte im White Mode.
+- Rollback-Hinweis:
+  - Letzte Änderungen in `app/templates/index.html` und `app/static/styles.css` zurücknehmen.
+
 ### 2026-03-01 13:50:05 Europe/Madrid | Dokumentationsprozess gestartet
 - Details: Neue Doku-Dateien und log_entry.sh für standardisierte Änderungs- und Betriebsprotokolle
 - Commit: ff94b80
