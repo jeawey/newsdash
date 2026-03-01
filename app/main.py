@@ -182,27 +182,15 @@ def dashboard(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     payload = get_dashboard_data(snapshot_date=snapshot_date, db=db)
-    now_utc = datetime.now(pytz.utc)
-    latest_cutoff = now_utc - timedelta(hours=6)
 
     latest_story_ids: set[int] = set()
     for story in payload.top_stories:
-        published = story.published_at
-        if published.tzinfo is None:
-            published = published.replace(tzinfo=pytz.utc)
-        else:
-            published = published.astimezone(pytz.utc)
-        if published >= latest_cutoff:
+        if story.score >= settings.hourly_breaking_threshold:
             latest_story_ids.add(story.id)
 
     for stories in payload.sectors.values():
         for story in stories:
-            published = story.published_at
-            if published.tzinfo is None:
-                published = published.replace(tzinfo=pytz.utc)
-            else:
-                published = published.astimezone(pytz.utc)
-            if published >= latest_cutoff:
+            if story.score >= settings.hourly_breaking_threshold:
                 latest_story_ids.add(story.id)
 
     return templates.TemplateResponse(

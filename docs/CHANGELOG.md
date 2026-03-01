@@ -518,3 +518,15 @@ Für jeden Eintrag:
   - Mehr `Frequenzen`-Stories passieren den Social-Filter und werden im Store berücksichtigt.
 - Rollback-Hinweis:
   - Werte in `worker/store.py` auf `2.0` bzw. `2` zurücksetzen.
+
+### 2026-03-01 22:45:00 CET | Web (HOT Badge nur nach Relevanz-Schwelle)
+- Änderung:
+  - `app/main.py`:
+    - HOT-Badge-Markierung im Dashboard wurde von "neu in den letzten 6h" auf "Relevanz >= `HOURLY_BREAKING_THRESHOLD`" umgestellt.
+    - Damit gilt HOT konsistent nur noch ab Score `7.0` (bzw. dem konfigurierten Threshold).
+- Grund:
+  - HOT sollte fachlich über Relevanz laufen, nicht über reinen Zeitstempel.
+- Erwarteter Effekt:
+  - Keine HOT-Badges mehr bei niedrigen Scores (z. B. ~2.x).
+- Rollback-Hinweis:
+  - In `app/main.py` die vorherige Zeitfenster-Logik (`latest_cutoff`) wiederherstellen.
