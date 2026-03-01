@@ -367,6 +367,38 @@ main {
   gap: 0.76rem;
 }
 
+.panel-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.72rem;
+}
+
+.show-more-btn {
+  border: 1px solid rgba(164, 195, 245, 0.3);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+  color: #e0eeff;
+  border-radius: 999px;
+  padding: 0.44rem 0.84rem;
+  font-family: "Manrope", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 160ms ease, box-shadow 180ms ease;
+}
+
+.show-more-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.2), 0 10px 22px -18px var(--glow);
+}
+
+:root[data-theme="light"] .show-more-btn {
+  color: #173c61;
+  border-color: rgba(106, 136, 177, 0.38);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(242, 247, 255, 0.76));
+}
+
 .story-card {
   position: relative;
   border-radius: var(--radius-md);

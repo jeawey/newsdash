@@ -157,6 +157,9 @@
             <p class="summary">In diesem Bereich gibt es aktuell keine passenden Meldungen.</p>
           </article>
         </div>
+        <div class="panel-actions">
+          <button class="show-more-btn is-hidden" data-role="show-more" type="button">Mehr anzeigen</button>
+        </div>
       </section>
       {% else %}
       <section class="panel glass-panel">
@@ -207,6 +210,7 @@
       const topCards = Array.from(document.querySelectorAll(".top-card"));
       const topEmpty = document.querySelector(".top-filter-empty");
       const sectorPanels = Array.from(document.querySelectorAll(".sector-panel"));
+      const DEFAULT_VISIBLE_PER_PANEL = 16;
       let currentScope = "global";
       let currentTopic = "all";
 
@@ -285,9 +289,11 @@
             ? (currentTopic === "all" || panel.dataset.sector === currentTopic)
             : true;
           const topicEmpty = panel.querySelector('[data-role="topic-empty"]');
+          const showMoreBtn = panel.querySelector('[data-role="show-more"]');
 
           if (!panelScopeVisible || !panelTopicVisible) {
             panel.classList.add("is-hidden");
+            if (showMoreBtn) showMoreBtn.classList.add("is-hidden");
             return;
           }
 
@@ -296,26 +302,55 @@
             panel.classList.remove("is-hidden");
             panel.classList.add("is-visible");
             if (topicEmpty) topicEmpty.classList.add("is-hidden");
+            if (showMoreBtn) showMoreBtn.classList.add("is-hidden");
             return;
           }
 
-          let visibleStories = 0;
+          const matchingStories = [];
           storyCards.forEach((card) => {
             const scopeVisible = isScopeMatch(card, currentScope);
             const topicVisible = currentScope === "global"
               ? true
               : (currentTopic === "all" || card.dataset.subtopic === currentTopic);
-            const visible = scopeVisible && topicVisible;
+            const matching = scopeVisible && topicVisible;
+            if (matching) matchingStories.push(card);
+            card.classList.add("is-hidden");
+          });
+
+          const expanded = panel.dataset.expanded === "true";
+          const visibleCount = expanded
+            ? matchingStories.length
+            : Math.min(DEFAULT_VISIBLE_PER_PANEL, matchingStories.length);
+
+          matchingStories.forEach((card, index) => {
+            const visible = index < visibleCount;
             card.classList.toggle("is-hidden", !visible);
             if (visible) card.classList.add("is-visible");
-            if (visible) visibleStories += 1;
           });
 
           panel.classList.remove("is-hidden");
           panel.classList.add("is-visible");
           if (topicEmpty) {
-            topicEmpty.classList.toggle("is-hidden", visibleStories > 0);
-            if (visibleStories === 0) topicEmpty.classList.add("is-visible");
+            topicEmpty.classList.toggle("is-hidden", matchingStories.length > 0);
+            if (matchingStories.length === 0) topicEmpty.classList.add("is-visible");
+          }
+
+          if (showMoreBtn) {
+            if (matchingStories.length === 0) {
+              panel.dataset.expanded = "false";
+              showMoreBtn.classList.add("is-hidden");
+              return;
+            }
+            const hiddenCount = Math.max(0, matchingStories.length - DEFAULT_VISIBLE_PER_PANEL);
+            const canExpand = hiddenCount > 0;
+            showMoreBtn.classList.toggle("is-hidden", !canExpand && !expanded);
+            if (canExpand) {
+              showMoreBtn.textContent = expanded
+                ? "Weniger anzeigen"
+                : `Mehr anzeigen (${hiddenCount})`;
+            } else if (expanded) {
+              showMoreBtn.textContent = "Weniger anzeigen";
+            }
           }
         });
       }
@@ -324,6 +359,9 @@
         button.addEventListener("click", () => {
           currentScope = button.dataset.scope;
           if (currentScope !== "global") currentTopic = "all";
+          sectorPanels.forEach((panel) => {
+            panel.dataset.expanded = "false";
+          });
           applyFilters();
         });
       });
@@ -331,6 +369,19 @@
       topicButtons.forEach((button) => {
         button.addEventListener("click", () => {
           currentTopic = button.dataset.topic;
+          sectorPanels.forEach((panel) => {
+            panel.dataset.expanded = "false";
+          });
+          applyFilters();
+        });
+      });
+
+      sectorPanels.forEach((panel) => {
+        const showMoreBtn = panel.querySelector('[data-role="show-more"]');
+        if (!showMoreBtn) return;
+        panel.dataset.expanded = "false";
+        showMoreBtn.addEventListener("click", () => {
+          panel.dataset.expanded = panel.dataset.expanded === "true" ? "false" : "true";
           applyFilters();
         });
       });
