@@ -188,6 +188,24 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `worker/scoring.py` zurücknehmen.
 
+### 2026-03-01 20:45:45 Europe/Madrid | Worker (Freshness-Fallback für Zielsektoren)
+- Änderung:
+  - Scoring um kontrollierten Freshness-Fallback erweitert:
+    - Wenn in einem Zielsektor im primären Frischefenster keine Stories verbleiben, werden ältere, aber noch akzeptable Stories aus erweitertem Fallback-Fenster nachgezogen.
+  - Fallback-Sektoren/Fenster:
+    - `Sustainability`: bis 720h
+    - `Biotechnologie`: bis 336h
+    - `Cannabis`: bis 336h
+  - Neue Diagnoselogs ergänzt:
+    - `Scoring freshness drops by sector`
+    - `Scoring freshness fallback used`
+- Grund:
+  - Reale Logs zeigten: Stories wurden korrekt gefetcht, aber vollständig vor dem Scoring-Ergebnis durch Frischefilter entfernt (v. a. Sustainability).
+- Erwarteter Effekt:
+  - Sektoren verschwinden nicht mehr vollständig aus dem Scoring, wenn kurzfristig wenig sehr frische Treffer vorhanden sind.
+- Rollback-Hinweis:
+  - Änderungen in `worker/scoring.py` zurücknehmen.
+
 ### 2026-03-01 14:22:00 Europe/Madrid | Web (UI/Theme)
 - Änderung:
   - Theme-Toggle von Text auf Sonne/Mond-Icon umgestellt (inkl. passender ARIA-Labels je Modus).

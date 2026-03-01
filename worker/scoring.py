@@ -118,6 +118,12 @@ _SECTOR_MAX_AGE_HOURS: dict[str, int] = {
     "Frequenzen": 96,
 }
 
+_SECTOR_FALLBACK_MAX_AGE_HOURS: dict[str, int] = {
+    "Sustainability": 720,
+    "Biotechnologie": 336,
+    "Cannabis": 336,
+}
+
 _SECTOR_KEYWORDS_BASE: dict[str, tuple[str, ...]] = {
     "AI": (
         "openai",
@@ -699,13 +705,39 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
     now = datetime.now(timezone.utc)
 
     grouped: dict[tuple[str, str], list[RawStory]] = defaultdict(list)
+    fallback_grouped: dict[tuple[str, str], list[RawStory]] = defaultdict(list)
+    dropped_by_freshness: dict[str, int] = defaultdict(int)
     for story in raw_stories:
         max_age_hours = _SECTOR_MAX_AGE_HOURS.get(story.sector, settings.max_story_age_hours)
         freshness_cutoff = now - timedelta(hours=max_age_hours)
-        if story.published_at < freshness_cutoff:
-            continue
         fp = fingerprint_title(story.title)
-        grouped[(story.sector, fp)].append(story)
+        if story.published_at >= freshness_cutoff:
+            grouped[(story.sector, fp)].append(story)
+            continue
+
+        dropped_by_freshness[story.sector] += 1
+        fallback_max_age = _SECTOR_FALLBACK_MAX_AGE_HOURS.get(story.sector)
+        if fallback_max_age is None:
+            continue
+        fallback_cutoff = now - timedelta(hours=fallback_max_age)
+        if story.published_at >= fallback_cutoff:
+            fallback_grouped[(story.sector, fp)].append(story)
+
+    present_sectors = {sector for sector, _ in grouped.keys()}
+    fallback_used: dict[str, int] = defaultdict(int)
+    for sector in _SECTOR_FALLBACK_MAX_AGE_HOURS:
+        if sector in present_sectors:
+            continue
+        for (entry_sector, fp), entries in fallback_grouped.items():
+            if entry_sector != sector:
+                continue
+            grouped[(entry_sector, fp)].extend(entries)
+            fallback_used[entry_sector] += len(entries)
+
+    if dropped_by_freshness:
+        logger.warning("Scoring freshness drops by sector: %s", dict(sorted(dropped_by_freshness.items())))
+    if fallback_used:
+        logger.warning("Scoring freshness fallback used: %s", dict(sorted(fallback_used.items())))
 
     candidates: list[dict[str, Any]] = []
     for (sector, fp), mentions in grouped.items():
