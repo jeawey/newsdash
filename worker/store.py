@@ -267,6 +267,12 @@ _CONTENT_CLUSTER_STOPWORDS = {
     "news", "update", "updates", "live", "today", "latest", "report", "reports",
 }
 
+_SECTOR_CONTENT_SIMILARITY_THRESHOLD: dict[str, float] = {
+    # Politics tends to have many paraphrases for the same event.
+    "Politics": 0.34,
+    "default": 0.52,
+}
+
 
 def _count_sector_hits(sector: str, text: str) -> int:
     terms = _SECTOR_RELEVANCE_TERMS.get(sector, ())
@@ -351,6 +357,46 @@ def _content_cluster_key(title: str, summary: str) -> str:
     return " ".join(unique_tokens)
 
 
+def _content_tokens(title: str, summary: str) -> set[str]:
+    text = strip_html(f"{title} {summary}").lower()
+    tokens = re.findall(r"[a-zA-ZäöüÄÖÜß0-9]{4,}", text)
+    return {token for token in tokens if token not in _CONTENT_CLUSTER_STOPWORDS}
+
+
+def _jaccard_similarity(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    union = left | right
+    if not union:
+        return 0.0
+    return len(left & right) / len(union)
+
+
+def _similarity_threshold_for_sector(sector: str) -> float:
+    return _SECTOR_CONTENT_SIMILARITY_THRESHOLD.get(
+        sector,
+        _SECTOR_CONTENT_SIMILARITY_THRESHOLD["default"],
+    )
+
+
+def _find_similar_cluster(
+    *,
+    clusters: list[dict[str, object]],
+    tokens: set[str],
+    sector: str,
+) -> int | None:
+    threshold = _similarity_threshold_for_sector(sector)
+    best_idx: int | None = None
+    best_similarity = 0.0
+    for idx, cluster in enumerate(clusters):
+        cluster_tokens = cluster["tokens"]  # type: ignore[index]
+        similarity = _jaccard_similarity(tokens, cluster_tokens)
+        if similarity >= threshold and similarity > best_similarity:
+            best_similarity = similarity
+            best_idx = idx
+    return best_idx
+
+
 class RunLogger:
     def __init__(self, db: Session, run_type: str):
         self.db = db
@@ -431,10 +477,18 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         seen_fingerprints = {row.fingerprint for row in existing_rows}
         seen_loose_fingerprints = {fingerprint_title_loose(row.title) for row in existing_rows}
         content_cluster_counts: dict[str, int] = defaultdict(int)
+        content_clusters: list[dict[str, object]] = []
         domain_counts: dict[str, int] = defaultdict(int)
         for row in existing_rows:
             domain_counts[row.source_domain] += 1
-            content_cluster_counts[_content_cluster_key(row.title or "", row.summary or "")] += 1
+            cluster_key = _content_cluster_key(row.title or "", row.summary or "")
+            content_cluster_counts[cluster_key] += 1
+            row_tokens = _content_tokens(row.title or "", row.summary or "")
+            match_idx = _find_similar_cluster(clusters=content_clusters, tokens=row_tokens, sector=sector)
+            if match_idx is None:
+                content_clusters.append({"tokens": row_tokens, "count": 1})
+            else:
+                content_clusters[match_idx]["count"] = int(content_clusters[match_idx]["count"]) + 1
 
         sorted_sector_stories = sorted(sector_stories, key=lambda s: s.score, reverse=True)
 
@@ -495,6 +549,10 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             cluster_key = _content_cluster_key(story.title, story.summary)
             if content_cluster_counts[cluster_key] >= settings.max_similar_stories_per_cluster:
                 return False, "duplicate_content_cluster"
+            tokens = _content_tokens(story.title, story.summary)
+            match_idx = _find_similar_cluster(clusters=content_clusters, tokens=tokens, sector=sector)
+            if match_idx is not None and int(content_clusters[match_idx]["count"]) >= settings.max_similar_stories_per_cluster:
+                return False, "duplicate_content_similarity"
             return True, None
 
         def _insert_story(story: ScoredStory) -> None:
@@ -502,6 +560,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             url_key = canonicalize_url(story.url)
             loose_fp = fingerprint_title_loose(story.title)
             cluster_key = _content_cluster_key(story.title, story.summary)
+            tokens = _content_tokens(story.title, story.summary)
             title_de = strip_html(translate_to_german(story.title))
             summary_de = strip_html(translate_to_german(story.summary))
 
@@ -530,6 +589,11 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             seen_fingerprints.add(story.fingerprint)
             seen_loose_fingerprints.add(loose_fp)
             content_cluster_counts[cluster_key] += 1
+            match_idx = _find_similar_cluster(clusters=content_clusters, tokens=tokens, sector=sector)
+            if match_idx is None:
+                content_clusters.append({"tokens": tokens, "count": 1})
+            else:
+                content_clusters[match_idx]["count"] = int(content_clusters[match_idx]["count"]) + 1
             domain_counts[story.source_domain] += 1
             sector_inserted += 1
             insert_counts[sector] += 1

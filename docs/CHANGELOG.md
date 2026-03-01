@@ -631,3 +631,17 @@ Für jeden Eintrag:
   - z. B. `Countries/Spain: EL PAÍS: ...` -> `EL PAÍS`, `Countries/United States: NYT > ...` -> `The New York Times`.
 - Rollback-Hinweis:
   - Zusatzlogik in `_normalize_source_name` zurücksetzen.
+
+### 2026-03-01 23:57:20 CET | Store (Semantische Dubletten-Filterung für ähnliche Headlines)
+- Änderung:
+  - `worker/store.py`:
+    - Content-Dedupe um semantische Ähnlichkeit (Jaccard über normalisierte Tokens) erweitert.
+    - neuer sektoraler Similarity-Threshold (`Politics` strenger auf Paraphrasen abgestimmt).
+    - pro ähnlichem Inhalts-Cluster greift weiterhin das bestehende Cluster-Limit (`MAX_SIMILAR_STORIES_PER_CLUSTER`, default `2`).
+    - neuer Drop-Reason im Log: `duplicate_content_similarity`.
+- Grund:
+  - Verhindert mehrere paraphrasierte Varianten desselben Ereignisses (z. B. identische Iran-Kriegsmeldung aus mehreren Quellen).
+- Erwarteter Effekt:
+  - Mehr Themen-Diversität im Feed; pro Ereignis nur die 1-2 relevantesten Meldungen.
+- Rollback-Hinweis:
+  - neue Similarity-Logik in `worker/store.py` entfernen.
