@@ -3,7 +3,7 @@ from datetime import datetime
 import re
 
 import pytz
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.models import JobRun, Story
@@ -168,6 +168,14 @@ def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
     return _count_sector_hits(story.sector, text) >= required
 
 
+def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, enabled: bool) -> bool:
+    if not enabled:
+        return True
+    required = _SECTOR_MIN_HITS.get(sector, 1)
+    text = f"{title} {summary}".lower()
+    return _count_sector_hits(sector, text) >= required
+
+
 class RunLogger:
     def __init__(self, db: Session, run_type: str):
         self.db = db
@@ -218,11 +226,27 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     inserted: list[Story] = []
     for sector, sector_stories in per_sector.items():
         existing_rows = db.execute(
-            select(Story.url, Story.fingerprint, Story.title, Story.source_domain).where(
+            select(Story.id, Story.url, Story.fingerprint, Story.title, Story.summary, Story.source_domain).where(
                 Story.snapshot_date == snapshot_date,
                 Story.sector == sector,
             )
         ).all()
+
+        stale_ids: list[int] = []
+        for row in existing_rows:
+            if not _passes_hard_relevance_gate_text(
+                sector=sector,
+                title=row.title or "",
+                summary=row.summary or "",
+                enabled=settings.hard_relevance_gate_enabled,
+            ):
+                stale_ids.append(row.id)
+
+        if stale_ids:
+            db.execute(delete(Story).where(Story.id.in_(stale_ids)))
+            db.commit()
+            existing_rows = [r for r in existing_rows if r.id not in stale_ids]
+
         seen_urls = {canonicalize_url(row.url) for row in existing_rows}
         seen_fingerprints = {row.fingerprint for row in existing_rows}
         seen_loose_fingerprints = {fingerprint_title_loose(row.title) for row in existing_rows}

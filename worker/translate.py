@@ -11,14 +11,18 @@ _TRANSLATE_TIMEOUT_SECONDS = 4
 _MAX_TEXT_LENGTH = 2200
 
 # Quick heuristic to avoid unnecessary translation calls for already-German text.
-_GERMAN_HINT_RE = re.compile(
-    r"\b(der|die|das|und|ist|nicht|mit|für|von|im|am|ein|eine|nach|auf|als|auch|bei)\b|[äöüÄÖÜß]",
+_GERMAN_UMLAUT_RE = re.compile(r"[äöüÄÖÜß]")
+_GERMAN_STOPWORDS_RE = re.compile(
+    r"\b(der|die|das|und|ist|nicht|mit|für|von|im|am|ein|eine|nach|auf|als|auch|bei|zum|zur|den|dem)\b",
     re.IGNORECASE,
 )
 
 
 def _looks_german(text: str) -> bool:
-    return bool(_GERMAN_HINT_RE.search(text))
+    if _GERMAN_UMLAUT_RE.search(text):
+        return True
+    # Require at least two German stopword hits to reduce false positives.
+    return len(_GERMAN_STOPWORDS_RE.findall(text)) >= 2
 
 
 @lru_cache(maxsize=8192)
@@ -49,4 +53,3 @@ def translate_to_german(text: str) -> str:
         return translated.strip() or text
     except Exception:
         return text
-
