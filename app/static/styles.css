@@ -367,16 +367,30 @@ main {
 }
 
 .story-card {
+  position: relative;
   border-radius: var(--radius-md);
-  border: 1px solid transparent;
+  border: 1px solid rgba(164, 195, 245, 0.23);
   padding: 0.86rem;
-  --card-fill: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
   --tier-border-gradient: linear-gradient(145deg, rgba(164, 195, 245, 0.26), rgba(120, 156, 209, 0.16));
-  background:
-    var(--card-fill) padding-box,
-    var(--tier-border-gradient) border-box;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 32px -24px rgba(0, 0, 0, 0.9);
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 220ms ease;
+}
+
+.story-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--tier-border-gradient);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.95;
 }
 
 .story-card[data-relevance-tier="verylow"] {
@@ -401,7 +415,8 @@ main {
 }
 
 :root[data-theme="light"] .story-card {
-  --card-fill: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(244, 250, 255, 0.72));
+  border-color: rgba(105, 134, 173, 0.28);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(244, 250, 255, 0.72));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 12px 24px -22px rgba(27, 53, 93, 0.35);
 }
 

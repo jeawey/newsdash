@@ -6,6 +6,14 @@ sectors:
       query: "sustainability startup invention climate tech breakthrough"
     - name: "Disasters & Response"
       query: "climate disaster catastrophe response sustainability headline"
+    - name: "ESG Finance & Disclosure"
+      query: "ESG disclosure CSRD SEC climate disclosure sustainability reporting update"
+    - name: "Energy Transition"
+      query: "renewables grid battery storage hydrogen transition policy project"
+    - name: "Circular Economy"
+      query: "circular economy recycling reuse waste policy industrial innovation"
+    - name: "Social Signal Watch"
+      query: "sustainability climate policy debate site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Biotechnologie:
     - name: "Effective Microorganisms"
@@ -14,6 +22,18 @@ sectors:
       query: "biotechnology devices lab equipment innovation startup"
     - name: "Biotech Breakthroughs"
       query: "biotech breakthrough clinical trial promising technology"
+    - name: "Biotech Breakthroughs"
+      query: "biotech FDA approval phase 2 phase 3 trial results gene therapy CRISPR"
+    - name: "Biotech Devices"
+      query: "medtech diagnostics lab automation biotech instrument launch regulation"
+    - name: "Effective Microorganisms"
+      query: "microbiome fermentation synthetic biology industrial biotech innovation"
+    - name: "Biotech Funding & M&A"
+      query: "biotech funding series A B C merger acquisition partnership pharma biotech"
+    - name: "Regulatory & Safety"
+      query: "EMA FDA biotech safety label approval rejection guidance"
+    - name: "Social Signal Watch"
+      query: "biotech CRISPR gene therapy trial reaction site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Cannabis:
     - name: "Legalization Tracker"
@@ -22,6 +42,18 @@ sectors:
       query: "hempcrete hempwood hemp textiles innovation policy"
     - name: "Spain Germany Policy"
       query: "cannabis Spain social clubs Germany legalization law update"
+    - name: "Legalization Tracker"
+      query: "cannabis law bill senate parliament state vote regulation update"
+    - name: "Industrial Hemp"
+      query: "industrial hemp materials construction fiber bioplastics policy"
+    - name: "Spain Germany Policy"
+      query: "cannabis Germany Spain association club license market policy"
+    - name: "Medical Cannabis"
+      query: "medical cannabis prescription reimbursement trial update policy"
+    - name: "Industry & Retail"
+      query: "cannabis retail wholesale market earnings expansion license"
+    - name: "Social Signal Watch"
+      query: "cannabis legalization policy reaction site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Frequenzen:
     - name: "HF Technology"
@@ -30,6 +62,18 @@ sectors:
       query: "spectrum allocation regulation auction telecom frequencies update"
     - name: "Resonance & Applications"
       query: "resonance frequency applications sensors medical industry breakthrough"
+    - name: "HF Technology"
+      query: "5G 6G mmWave RF front-end antenna chipset wireless infrastructure"
+    - name: "Spectrum Policy"
+      query: "FCC BNetzA Ofcom spectrum policy auction allocation telecom bands"
+    - name: "Resonance & Applications"
+      query: "RFID radar satellite communications spectrum interference sensing applications"
+    - name: "Telecom Infrastructure"
+      query: "telecom infrastructure backhaul small cells private 5G deployment"
+    - name: "Defense & Space Spectrum"
+      query: "spectrum satellite defense communications jamming interference regulation"
+    - name: "Social Signal Watch"
+      query: "spectrum auction RF policy debate site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Crypto:
     - name: "Crashes & Volatility"
@@ -38,6 +82,14 @@ sectors:
       query: "altcoin analysis outlook on-chain trend major headlines"
     - name: "Policy & Market Impact"
       query: "crypto regulation tariffs political impact bitcoin altcoins"
+    - name: "Institutional Adoption"
+      query: "bitcoin treasury ETF institutional adoption custody inflows"
+    - name: "Exchanges & Infrastructure"
+      query: "crypto exchange custody stablecoin payments infrastructure compliance"
+    - name: "Security & Exploits"
+      query: "crypto hack exploit bridge attack smart contract vulnerability"
+    - name: "Social Signal Watch"
+      query: "bitcoin ethereum macro sentiment site:x.com OR site:reddit.com OR site:linkedin.com"
 
   AI:
     - name: "Labs & Models"
@@ -46,6 +98,16 @@ sectors:
       query: "AI executive moves leadership changes OpenAI Anthropic Perplexity"
     - name: "AI Product Launches"
       query: "AI product launch frontier model benchmark enterprise adoption"
+    - name: "Policy & Regulation"
+      query: "AI Act regulation governance policy safety standards compliance"
+    - name: "AI in Enterprise"
+      query: "enterprise AI deployment copilots productivity automation case study"
+    - name: "AI Chips & Infra"
+      query: "AI chips GPUs inference datacenter infrastructure launch roadmap"
+    - name: "Open Source & Research"
+      query: "open source AI model release paper benchmark github"
+    - name: "Social Signal Watch"
+      query: "OpenAI Anthropic model reaction site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Hamburg:
     - name: "Lokale Politik & Gesetze"
@@ -80,6 +142,24 @@ sectors:
       query: "Hamburg Breaking News Eilmeldung Polizei Feuer Verkehr Politik Wirtschaft"
     - name: "Wirtschaft & Stadtleben"
       query: "Hamburg Hafen Logistik Innenstadt Handel Gewerbe Unternehmen Standortnachrichten"
+    - name: "Lokale Politik & Gesetze"
+      query: "Hamburg Verordnung Gesetzesvorhaben Bezirksamt Beschluss Oeffentliche Sitzung"
+    - name: "Ausschreibungen & Vergaben"
+      query: "Hamburg Vergabeverfahren Bauleistung Dienstleistung Ausschreibungsplattform"
+    - name: "Hotels & Hospitality"
+      query: "Hamburg Hotelprojekt Genehmigung Baufortschritt Hospitality Betreiberwechsel"
+    - name: "Nachhaltigkeit & Quartiere"
+      query: "Hamburg emissionsfrei Verkehrswende Klimastrategie Quartiersentwicklung"
+    - name: "Events & Kultur"
+      query: "Hamburg Stadtfest Hafenfest Elbphilharmonie Eventkalender Kulturprogramm"
+    - name: "St. Pauli & Kiez"
+      query: "St Pauli Kiez Reeperbahn Anwohner Gewerbe Polizei Szene Hamburg"
+    - name: "Schlagzeilen & Brennpunkte"
+      query: "Hamburg Top News Brennpunkt Eilmeldung Unfall Feuer Polizei"
+    - name: "Wirtschaft & Stadtleben"
+      query: "Hamburg Wohnungsmarkt Gewerbemiete Startups Logistik Hafenwirtschaft"
+    - name: "Social Signal Watch"
+      query: "Hamburg lokale Nachrichten Diskussion site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Mallorca:
     - name: "Lokale Politik & Gesetze"
@@ -118,6 +198,26 @@ sectors:
       query: "Manacor Felanitx Santanyi Cala Ratjada Capdepera noticias locales Mallorca"
     - name: "Wirtschaft & Tourismus"
       query: "Mallorca turismo ocupacion hotelera aeropuerto Palma economia empleo vivienda"
+    - name: "Lokale Politik & Gesetze"
+      query: "Mallorca pleno municipal normativa decreto Balears Palma actualidad politica"
+    - name: "Ausschreibungen & Vergaben"
+      query: "Mallorca contrato publico adjudicacion licitacion ayuntamiento consell obra"
+    - name: "Immobilienrecht & Neubau"
+      query: "Mallorca licencia urbanistica obra nueva planeamiento vivienda normativa"
+    - name: "Ferienlizenzen & Airbnb"
+      query: "Mallorca licencia ETV alquiler vacacional inspeccion Airbnb sanciones"
+    - name: "Hoteleroeffnungen & Hospitality"
+      query: "Mallorca apertura hotel reforma hotelera cadena hotelera inauguracion"
+    - name: "Nachhaltigkeit & Inselprojekte"
+      query: "Mallorca movilidad sostenible agua energia residuos proyecto insular"
+    - name: "Events & Gesellschaft"
+      query: "Mallorca fiestas patronales agenda cultural conciertos feria Palma"
+    - name: "Ostküste & Gemeinden"
+      query: "Mallorca levante costa este municipios Manacor Santanyi noticias hoy"
+    - name: "Wirtschaft & Tourismus"
+      query: "Mallorca turismo demanda reservas temporada empleo hosteleria"
+    - name: "Social Signal Watch"
+      query: "Mallorca noticias locales debate site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Kenya:
     - name: "Politics"
@@ -126,6 +226,12 @@ sectors:
       query: "Kenya agriculture Mount Kenya environment economy"
     - name: "Startup Ecosystem"
       query: "Kenya startup funding technology Nairobi innovation latest"
+    - name: "Infrastructure & Public Projects"
+      query: "Kenya infrastructure tender procurement transport energy project update"
+    - name: "Business & Markets"
+      query: "Kenya business economy central bank inflation market policy"
+    - name: "Social Signal Watch"
+      query: "Kenya policy election business discussion site:x.com OR site:reddit.com OR site:linkedin.com"
 
   Politics:
     - name: "Geopolitical Conflicts"
@@ -134,6 +240,12 @@ sectors:
       query: "major political negotiation tariffs appointments world headline"
     - name: "Elections & Summits"
       query: "elections coalition government summit G7 NATO UN latest decisions"
+    - name: "Trade & Sanctions"
+      query: "trade sanctions tariff export controls geopolitical impact latest"
+    - name: "Security & Defense"
+      query: "defense policy military aid security doctrine parliament vote"
+    - name: "Social Signal Watch"
+      query: "geopolitics policy analysis debate site:x.com OR site:reddit.com OR site:linkedin.com"
 
 trusted_domains:
   reuters.com: 2.5
@@ -143,6 +255,20 @@ trusted_domains:
   apnews.com: 2.2
   nytimes.com: 2.1
   washingtonpost.com: 2.0
+  cnn.com: 1.9
+  foxnews.com: 1.8
+  nypost.com: 1.6
+  axios.com: 1.9
+  semafor.com: 1.8
+  aljazeera.com: 1.8
+  euronews.com: 1.7
+  france24.com: 1.7
+  marketwatch.com: 1.8
+  barrons.com: 1.9
+  forbes.com: 1.8
+  businessinsider.com: 1.7
+  cointelegraph.com: 1.6
+  decrypt.co: 1.6
   thetimes.co.uk: 2.0
   telegraph.co.uk: 2.0
   theguardian.com: 1.9
@@ -152,24 +278,42 @@ trusted_domains:
   welt.de: 1.9
   zeit.de: 1.9
   spiegel.de: 1.9
+  sueddeutsche.de: 1.9
+  bild.de: 1.5
+  t-online.de: 1.6
+  heise.de: 1.8
+  golem.de: 1.7
+  netzpolitik.org: 1.6
   handelsblatt.com: 2.0
   tagesschau.de: 2.0
   dw.com: 1.8
   elpais.com: 1.9
   elmundo.es: 1.8
   abc.es: 1.8
+  lavanguardia.com: 1.8
+  expansion.com: 1.7
+  cincodias.elpais.com: 1.7
   economist.com: 2.1
   nature.com: 2.1
   bbc.com: 1.9
   cnbc.com: 1.8
   coindesk.com: 1.8
+  arstechnica.com: 1.8
+  techcrunch.com: 1.8
+  theinformation.com: 1.8
+  venturebeat.com: 1.7
+  wired.com: 1.8
   abendblatt.de: 1.9
   mopo.de: 1.7
   ndr.de: 1.9
+  sat1regional.de: 1.6
+  hamburg1.de: 1.5
   hamburg.de: 1.6
   mallorcazeitung.es: 1.9
   ultimahora.es: 1.7
   diariodemallorca.es: 1.8
+  majorcadailybulletin.com: 1.7
+  ib3.org: 1.6
   hosteltur.com: 1.6
   ahgz.de: 1.8
   tophotel.de: 1.7
@@ -179,6 +323,28 @@ trusted_domains:
   cope.es: 1.6
   rne.es: 1.6
   hamburg-business.com: 1.6
+  statnews.com: 1.9
+  fiercebiotech.com: 1.8
+  biopharmadive.com: 1.8
+  endpointsnews.com: 1.7
+  leafly.com: 1.5
+  mjbizdaily.com: 1.7
+  hempindustrydaily.com: 1.6
+  ieee.org: 1.9
+  spectrum.ieee.org: 1.8
+  lightreading.com: 1.7
+  rcrwireless.com: 1.6
+  fcc.gov: 2.0
+  ofcom.org.uk: 1.9
+  bnetza.de: 1.9
+  ema.europa.eu: 2.0
+  fda.gov: 2.0
+  marijuanamoment.net: 1.6
+  greenmarketreport.com: 1.5
+  x.com: 1.4
+  reddit.com: 1.3
+  linkedin.com: 1.4
+  substack.com: 1.4
 
 excluded_domains:
   - "youtube.com"
