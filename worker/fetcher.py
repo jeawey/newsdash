@@ -62,7 +62,12 @@ _DIRECT_SECTOR_MIN_FLOORS: dict[str, int] = {
 }
 
 _DIRECT_SECTOR_MAX_SHARE: dict[str, float] = {
-    "Politics": 0.45,
+    "Politics": 0.25,
+}
+
+_QUERY_SECTOR_MAX_SHARE: dict[str, float] = {
+    "Politics": 0.18,
+    "Mallorca": 0.22,
 }
 
 _SECTOR_QUERY_EXPANSIONS: dict[str, tuple[str, ...]] = {
@@ -1064,6 +1069,7 @@ def fetch_all_stories(config: SourceConfig, *, max_runtime_seconds: int | None =
         budget=query_budget,
         sector_task_counts=query_task_counts,
         min_floors=_QUERY_SECTOR_MIN_FLOORS,
+        max_share_caps=_QUERY_SECTOR_MAX_SHARE,
     )
     direct_sector_limits = _build_sector_limits(
         budget=direct_budget,

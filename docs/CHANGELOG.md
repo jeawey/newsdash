@@ -158,6 +158,21 @@ Für jeden Eintrag:
 - Rollback-Hinweis:
   - Änderungen in `worker/fetcher.py` zurücknehmen.
 
+### 2026-03-01 20:29:31 Europe/Madrid | Worker (Fetch-Balancing verschärft: Query/Direct Share-Caps)
+- Änderung:
+  - Dominanz-Caps im Fetch nachgeschärft:
+    - Direct: `Politics`-Max-Share von `0.45` auf `0.25` gesenkt.
+    - Query: neue Max-Share-Caps eingeführt:
+      - `Politics`: `0.18`
+      - `Mallorca`: `0.22`
+  - Query-Limitberechnung nutzt nun zusätzlich `max_share_caps`.
+- Grund:
+  - Trotz erweiterter Recherche wurden Raw-Stories weiterhin von `Politics`/`Mallorca` überdominiert; Zielsektoren bekamen relativ zu wenig Platz.
+- Erwarteter Effekt:
+  - Ausgewogenere Rohdaten-Verteilung und bessere Chance auf sichtbare Sustainability/Biotechnologie/Cannabis-Items im finalen Dashboard.
+- Rollback-Hinweis:
+  - Änderungen in `worker/fetcher.py` zurücknehmen.
+
 ### 2026-03-01 14:22:00 Europe/Madrid | Web (UI/Theme)
 - Änderung:
   - Theme-Toggle von Text auf Sonne/Mond-Icon umgestellt (inkl. passender ARIA-Labels je Modus).
