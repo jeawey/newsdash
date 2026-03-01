@@ -170,11 +170,11 @@ _SECTOR_MIN_HITS: dict[str, int] = {
 _SECTOR_MIN_STORY_SCORE: dict[str, float] = {
     "Biotechnologie": 0.55,
     "Sustainability": 0.60,
-    "Frequenzen": 0.55,
+    "Frequenzen": 0.45,
     "Kenya": 0.55,
     "Cannabis": 0.60,
     "Mallorca": 0.70,
-    "Hamburg": 0.85,
+    "Hamburg": 0.70,
 }
 
 _HAMBURG_REJECT_TERMS: tuple[str, ...] = (
@@ -282,9 +282,8 @@ def _is_high_signal_politics_story(text: str) -> bool:
 def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
     if not enabled:
         return True
-    # Keep hard lexical gate only for rooms where we observed strong off-topic drift.
-    # Mallorca/Kenya are intentionally broader now to avoid over-filtering.
-    if story.sector not in {"Hamburg", "Politics"}:
+    # Keep hard lexical gate only for Politics to avoid suppressing local sector volume.
+    if story.sector != "Politics":
         return True
     required = _SECTOR_MIN_HITS.get(story.sector, 1)
     text = f"{story.title} {story.summary}".lower()
@@ -299,7 +298,7 @@ def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
 def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, enabled: bool) -> bool:
     if not enabled:
         return True
-    if sector not in {"Hamburg", "Politics"}:
+    if sector != "Politics":
         return True
     text = f"{title} {summary}".lower()
     if sector == "Hamburg":

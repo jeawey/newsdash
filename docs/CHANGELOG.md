@@ -430,3 +430,19 @@ Für jeden Eintrag:
   - Mehr Netto-Inserts in bislang unterversorgten Sektoren ohne Politics/Hamburg-Qualitätsverlust.
 - Rollback-Hinweis:
   - Änderungen in `worker/store.py` auf den vorherigen Stand zurücksetzen.
+
+### 2026-03-01 22:02:20 CET | Tuning (Sector Cap + Gate Relax + Frequency/Hamburg Thresholds)
+- Änderung:
+  - `app/settings.py`:
+    - `MAX_ITEMS_PER_SECTOR` Default von `16` auf `24` erhöht.
+  - `worker/store.py`:
+    - Hard-Relevance-Gate weiter gelockert: nur noch für `Politics` aktiv.
+    - sektor-spezifische Mindestscore-Schwellen angepasst:
+      - `Frequenzen` von `0.55` auf `0.45`
+      - `Hamburg` von `0.85` auf `0.70`
+- Grund:
+  - Nach dem letzten Run waren sektorale Tagescaps und zu strenge Gates/Score-Schwellen die verbleibenden Bottlenecks.
+- Erwarteter Effekt:
+  - Mehr verfügbare Stories in unterfüllten Sektoren (`Frequenzen`, `Hamburg`, `Kenya`, `Mallorca`, `Biotechnologie`, `Cannabis`) bei weiterhin stabiler Politics-Qualität.
+- Rollback-Hinweis:
+  - Änderungen in `app/settings.py` und `worker/store.py` zurücksetzen.
