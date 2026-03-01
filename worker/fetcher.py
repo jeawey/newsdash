@@ -181,10 +181,10 @@ _SECTOR_MIN_SCORE: dict[str, int] = {
     "Cannabis": 2,
     "Frequenzen": 2,
     "Sustainability": 2,
-    "Hamburg": 2,
+    "Hamburg": 1,
     "Mallorca": 1,
     "Kenya": 1,
-    "Politics": 1,
+    "Politics": 2,
 }
 
 _HAMBURG_ANCHOR_TERMS: tuple[str, ...] = (
@@ -307,6 +307,9 @@ def _is_hamburg_local_story(text: str) -> bool:
 
     # Reject non-Hamburg local coverage that leaks in via broad feeds/queries.
     if _term_hits(text, _HAMBURG_FOREIGN_GEO_TERMS) > 0:
+        # If Hamburg is explicitly present, keep the story.
+        if re.search(r"\bhamburg\b", text):
+            return True
         strong_hamburg_context = _term_hits(
             text, ("hamburger senat", "hamburger bürgerschaft", "bezirk hamburg", "hafen hamburg", "st pauli", "reeperbahn")
         ) >= 1
@@ -345,13 +348,13 @@ def _classify_sector_and_subtopic(*, base_sector: str, title: str, summary: str,
     best_score = scores.get(best_sector, 0)
     min_required = _SECTOR_MIN_SCORE.get(best_sector, 1)
 
-    if best_sector != "Politics" and politics_score >= 2 and best_score < max(3, politics_score):
+    if best_sector != "Politics" and politics_score >= 3 and best_score < max(4, politics_score):
         best_sector = "Politics"
         best_score = politics_score
         min_required = _SECTOR_MIN_SCORE["Politics"]
 
     if best_score < min_required:
-        best_sector = "Politics"
+        best_sector = base_sector
 
     return best_sector, _SECTOR_DEFAULT_SUBTOPIC.get(best_sector, "Global Power Moves")
 
@@ -486,9 +489,16 @@ def _to_story(query: QueryConfig, entry: dict, excluded_domains: set[str]) -> Op
             return None
         if not _is_hamburg_local_story(text):
             return None
-    if inferred_sector == query.sector:
+    elif query.sector in {"Mallorca", "Kenya"}:
+        # Keep room-specific sector mapping for location rooms.
+        inferred_sector = query.sector
         inferred_subtopic = query.subtopic
-    elif inferred_sector in {"Hamburg", "Mallorca"}:
+    else:
+        # For sector queries, keep configured sector to avoid politics over-dominance.
+        inferred_sector = query.sector
+        inferred_subtopic = query.subtopic
+
+    if inferred_sector in {"Hamburg", "Mallorca"} and query.sector not in {"Hamburg", "Mallorca"}:
         inferred_subtopic = _select_local_subtopic(
             inferred_sector,
             text,
