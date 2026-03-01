@@ -530,3 +530,18 @@ Für jeden Eintrag:
   - Keine HOT-Badges mehr bei niedrigen Scores (z. B. ~2.x).
 - Rollback-Hinweis:
   - In `app/main.py` die vorherige Zeitfenster-Logik (`latest_cutoff`) wiederherstellen.
+
+### 2026-03-01 22:56:30 CET | Scoring/Store (Relevanz auf 1-10 Skala normalisiert)
+- Änderung:
+  - `worker/scoring.py`:
+    - Finaler Story-Score wird nun auf eine echte `1-10` Skala normalisiert (`score = clamp(raw_score * 3.0, 1.0, 10.0)`).
+    - Interne Rohwerte bleiben für Debug erhalten (`score_raw`), Ausgabe/DB nutzt den skalierten 1-10 Wert.
+  - `worker/store.py`:
+    - sektorale Mindestscore-Schwellen auf die neue 1-10 Skala umgerechnet.
+    - sektorale Social-Score-Schwellen auf die neue 1-10 Skala umgerechnet.
+- Grund:
+  - Dashboard-Legende und HOT-Logik sollen mit derselben Relevanzskala arbeiten (1-10, HOT ab 7).
+- Erwarteter Effekt:
+  - Relevanzwerte im UI sind konsistent mit Legende und `HOURLY_BREAKING_THRESHOLD=7`.
+- Rollback-Hinweis:
+  - Score-Skalierung in `worker/scoring.py` entfernen und Schwellen in `worker/store.py` auf Vorwerte zurücksetzen.

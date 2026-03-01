@@ -168,22 +168,22 @@ _SECTOR_MIN_HITS: dict[str, int] = {
 }
 
 _SECTOR_MIN_STORY_SCORE: dict[str, float] = {
-    "AI": 0.70,
-    "Crypto": 0.80,
-    "Biotechnologie": 0.55,
-    "Sustainability": 0.50,
-    "Frequenzen": 0.20,
-    "Kenya": 0.40,
-    "Cannabis": 0.40,
-    "Mallorca": 0.70,
-    "Hamburg": 0.60,
+    "AI": 2.1,
+    "Crypto": 2.4,
+    "Biotechnologie": 1.65,
+    "Sustainability": 1.5,
+    "Frequenzen": 1.2,
+    "Kenya": 1.2,
+    "Cannabis": 1.2,
+    "Mallorca": 2.1,
+    "Hamburg": 1.8,
 }
 
 _SECTOR_MIN_SOCIAL_STORY_SCORE: dict[str, float] = {
-    "AI": 2.4,
-    "Sustainability": 2.4,
-    "Cannabis": 2.2,
-    "Frequenzen": 1.8,
+    "AI": 7.2,
+    "Sustainability": 7.2,
+    "Cannabis": 6.6,
+    "Frequenzen": 5.4,
 }
 
 _SECTOR_MIN_SOCIAL_MENTIONS: dict[str, int] = {

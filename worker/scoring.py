@@ -703,6 +703,12 @@ def _recency_score(published_at: datetime, now: datetime) -> float:
     return 6.0 * math.exp(-age_hours / 14.0)
 
 
+def _scale_score_to_1_10(raw_score: float) -> float:
+    # Calibrated for current raw distribution (~0-3.5): keep ordering while
+    # mapping dashboard relevance to an intuitive 1-10 scale.
+    return max(1.0, min(raw_score * 3.0, 10.0))
+
+
 def _log_score_explainer(candidates: list[dict[str, Any]], *, limit: int) -> None:
     if limit <= 0:
         return
@@ -882,10 +888,12 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
             + coherence_score * _FINAL_SCORE_WEIGHTS["coherence"]
         )
         final_score = max(final_score, 0.0)
+        scaled_score = _scale_score_to_1_10(final_score)
 
         candidate["comparative_score"] = comparative_score
         candidate["coherence_score"] = coherence_score
-        candidate["score"] = final_score
+        candidate["score_raw"] = final_score
+        candidate["score"] = scaled_score
 
         scored.append(
             ScoredStory(
@@ -897,7 +905,7 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
                 source_domain=story.source_domain,
                 summary=story.summary,
                 published_at=story.published_at,
-                score=round(final_score, 4),
+                score=round(scaled_score, 4),
                 heat_score=round(candidate["heat_score"], 4),
                 fingerprint=candidate["fingerprint"],
                 mentions=candidate["mentions"],
