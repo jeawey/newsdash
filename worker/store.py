@@ -200,6 +200,10 @@ def _count_sector_hits(sector: str, text: str) -> int:
 def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
     if not enabled:
         return True
+    # Keep hard lexical gate strict for geo/politics rooms, but softer for global sectors
+    # to avoid underfilling categories when wording varies across languages/sources.
+    if story.sector not in {"Hamburg", "Mallorca", "Kenya", "Politics"}:
+        return True
     required = _SECTOR_MIN_HITS.get(story.sector, 1)
     text = f"{story.title} {story.summary}".lower()
     if story.sector == "Hamburg":
@@ -210,6 +214,8 @@ def _passes_hard_relevance_gate(story: ScoredStory, enabled: bool) -> bool:
 
 def _passes_hard_relevance_gate_text(*, sector: str, title: str, summary: str, enabled: bool) -> bool:
     if not enabled:
+        return True
+    if sector not in {"Hamburg", "Mallorca", "Kenya", "Politics"}:
         return True
     text = f"{title} {summary}".lower()
     if sector == "Hamburg":
@@ -255,16 +261,16 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     expanded_domain_cap_sectors = {"Biotechnologie", "Frequenzen", "Cannabis"}
     social_domains = {"x.com", "reddit.com", "linkedin.com", "substack.com"}
     sector_minimum_targets: dict[str, int] = {
-        "AI": 12,
-        "Crypto": 10,
-        "Sustainability": 8,
-        "Biotechnologie": 8,
-        "Cannabis": 8,
-        "Frequenzen": 8,
-        "Politics": 8,
-        "Kenya": 8,
-        "Hamburg": 12,
-        "Mallorca": 12,
+        "AI": 6,
+        "Crypto": 6,
+        "Sustainability": 6,
+        "Biotechnologie": 6,
+        "Cannabis": 6,
+        "Frequenzen": 6,
+        "Politics": 6,
+        "Kenya": 6,
+        "Hamburg": 6,
+        "Mallorca": 6,
     }
     inserted: list[Story] = []
     sectors_to_process = set(per_sector.keys()) | set(sector_minimum_targets.keys())
@@ -408,5 +414,24 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                     continue
                 _insert_story(story)
 
+    db.commit()
+
+    # Enforce hard per-sector daily cap on stored rows (not only per-run inserts).
+    # This keeps dashboard distribution stable over many hourly runs.
+    for sector in sectors_to_process:
+        rows = db.execute(
+            select(Story.id)
+            .where(
+                Story.snapshot_date == snapshot_date,
+                Story.sector == sector,
+            )
+            .order_by(Story.score.desc(), Story.published_at.desc(), Story.id.desc())
+        ).all()
+        if len(rows) <= settings.max_items_per_sector:
+            continue
+        keep_ids = {row.id for row in rows[: settings.max_items_per_sector]}
+        prune_ids = [row.id for row in rows if row.id not in keep_ids]
+        if prune_ids:
+            db.execute(delete(Story).where(Story.id.in_(prune_ids)))
     db.commit()
     return inserted
