@@ -40,6 +40,17 @@ def _configured_sectors() -> list[str]:
     return ordered
 
 
+def _sector_subtopics() -> dict[str, list[str]]:
+    config = load_source_config()
+    per_sector: dict[str, list[str]] = {}
+    for query in config.queries:
+        sector = _normalize_sector_name(query.sector)
+        bucket = per_sector.setdefault(sector, [])
+        if query.subtopic not in bucket:
+            bucket.append(query.subtopic)
+    return per_sector
+
+
 def _topic_sectors() -> list[str]:
     room_only = {"Kenya", "Hamburg", "Mallorca"}
     return [sector for sector in _configured_sectors() if sector not in room_only]
@@ -153,6 +164,7 @@ def dashboard(
             "sectors": payload.sectors,
             "configured_sectors": _configured_sectors(),
             "configured_topics": _topic_sectors(),
+            "sector_subtopics": _sector_subtopics(),
             "sector_colors": SECTOR_COLORS,
             "asset_prefix": "/static",
         },

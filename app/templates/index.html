@@ -4,6 +4,7 @@
     {% set assets = asset_prefix|default('/static') %}
     {% set sectors_order = configured_sectors|default(sectors.keys()|list) %}
     {% set topics_order = configured_topics|default(sectors_order) %}
+    {% set subtopics_by_sector = sector_subtopics|default({}) %}
     {% set latest_ids = latest_story_ids|default([]) %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -60,13 +61,33 @@
       <section class="topic-nav panel glass-panel">
         <div class="panel-head">
           <h2>Themenauswahl</h2>
-          <p>Global-Filter nach Themen</p>
+          <p>Filter je Nachrichtenraum</p>
         </div>
         <div class="topic-buttons">
-          <button class="topic-btn is-active" data-topic="all" type="button">Alle</button>
-          {% for sector in topics_order %}
-          <button class="topic-btn" data-topic="{{ sector }}" type="button">{{ sector }}</button>
-          {% endfor %}
+          <div class="topic-group is-active" data-topic-scope="global">
+            <button class="topic-btn topic-filter-btn is-active" data-topic="all" type="button">Alle</button>
+            {% for sector in topics_order %}
+            <button class="topic-btn topic-filter-btn" data-topic="{{ sector }}" type="button">{{ sector }}</button>
+            {% endfor %}
+          </div>
+          <div class="topic-group" data-topic-scope="hamburg">
+            <button class="topic-btn topic-filter-btn is-active" data-topic="all" type="button">Alle</button>
+            {% for topic in subtopics_by_sector.get("Hamburg", []) %}
+            <button class="topic-btn topic-filter-btn" data-topic="{{ topic }}" type="button">{{ topic }}</button>
+            {% endfor %}
+          </div>
+          <div class="topic-group" data-topic-scope="mallorca">
+            <button class="topic-btn topic-filter-btn is-active" data-topic="all" type="button">Alle</button>
+            {% for topic in subtopics_by_sector.get("Mallorca", []) %}
+            <button class="topic-btn topic-filter-btn" data-topic="{{ topic }}" type="button">{{ topic }}</button>
+            {% endfor %}
+          </div>
+          <div class="topic-group" data-topic-scope="kenya">
+            <button class="topic-btn topic-filter-btn is-active" data-topic="all" type="button">Alle</button>
+            {% for topic in subtopics_by_sector.get("Kenya", []) %}
+            <button class="topic-btn topic-filter-btn" data-topic="{{ topic }}" type="button">{{ topic }}</button>
+            {% endfor %}
+          </div>
         </div>
       </section>
 
@@ -78,11 +99,11 @@
         <div class="story-grid top-grid">
           {% if top_stories %}
           {% for story in top_stories %}
-          <article class="story-card highlight top-card" data-sector="{{ story.sector }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
+          <article class="story-card highlight top-card {% if story.id in latest_ids %}is-hot{% endif %}" data-sector="{{ story.sector }}" data-subtopic="{{ story.subtopic }}" data-score="{{ story.score }}" style="--sector-accent: {{ sector_colors.get(story.sector, '#5eead4') }}">
             <p class="chip-row">
               <span class="chip">{{ story.sector }} · {{ story.subtopic }}</span>
               {% if story.id in latest_ids %}
-              <span class="latest-tag">LIVE</span>
+              <span class="latest-tag">HOT</span>
               {% endif %}
             </p>
             <h3><a href="{{ story.url }}" target="_blank" rel="noopener">{{ story.title }}</a></h3>
@@ -113,16 +134,16 @@
         <div class="story-grid">
           {% if stories %}
           {% for story in stories %}
-          <article class="story-card sector-story" data-role="sector-story" data-sector="{{ sector }}">
+          <article class="story-card sector-story {% if story.id in latest_ids %}is-hot{% endif %}" data-role="sector-story" data-sector="{{ sector }}" data-subtopic="{{ story.subtopic }}" data-score="{{ story.score }}">
             <p class="chip-row">
               <span class="chip">{{ story.subtopic }}</span>
               {% if story.id in latest_ids %}
-              <span class="latest-tag">LIVE</span>
+              <span class="latest-tag">HOT</span>
               {% endif %}
             </p>
             <h3><a href="{{ story.url }}" target="_blank" rel="noopener">{{ story.title }}</a></h3>
             <p class="summary">{{ story.summary }}</p>
-            <p class="meta">{{ story.source_name }} · {{ story.published_at.strftime('%d.%m.%Y %H:%M') }} · Heat {{ '%.2f'|format(story.heat_score) }}</p>
+            <p class="meta">{{ story.source_name }} · {{ story.published_at.strftime('%d.%m.%Y %H:%M') }} · Relevanz {{ '%.2f'|format(story.score) }} · Heat {{ '%.2f'|format(story.heat_score) }}</p>
           </article>
           {% endfor %}
           {% else %}
@@ -177,13 +198,17 @@
     <script>
       const themeToggle = document.getElementById("themeToggle");
       const scopeButtons = Array.from(document.querySelectorAll(".scope-btn"));
-      const topicButtons = Array.from(document.querySelectorAll(".topic-btn"));
+      const topicButtons = Array.from(document.querySelectorAll(".topic-filter-btn"));
+      const topicGroups = Array.from(document.querySelectorAll(".topic-group"));
       const topCards = Array.from(document.querySelectorAll(".top-card"));
       const topEmpty = document.querySelector(".top-filter-empty");
       const sectorPanels = Array.from(document.querySelectorAll(".sector-panel"));
-      const selectableTopicButtons = topicButtons.filter((button) => !button.classList.contains("scope-btn"));
       let currentScope = "global";
       let currentTopic = "all";
+
+      function activeTopicButtons() {
+        return topicButtons.filter((button) => button.closest(".topic-group")?.dataset.topicScope === currentScope);
+      }
 
       function applyTheme(theme) {
         const normalized = theme === "light" ? "light" : "dark";
@@ -225,17 +250,20 @@
           button.classList.toggle("is-active", button.dataset.scope === currentScope);
         });
 
-        const topicEnabled = currentScope === "global";
-        selectableTopicButtons.forEach((button) => {
-          const isAll = button.dataset.topic === "all";
-          button.disabled = !topicEnabled && !isAll;
+        topicGroups.forEach((group) => {
+          group.classList.toggle("is-active", group.dataset.topicScope === currentScope);
+        });
+
+        activeTopicButtons().forEach((button) => {
           button.classList.toggle("is-active", button.dataset.topic === currentTopic);
         });
 
         let visibleTopCards = 0;
         topCards.forEach((card) => {
           const matchesScope = isScopeMatch(card, currentScope);
-          const matchesTopic = currentScope !== "global" || currentTopic === "all" || card.dataset.sector === currentTopic;
+          const matchesTopic = currentScope === "global"
+            ? (currentTopic === "all" || card.dataset.sector === currentTopic)
+            : (currentTopic === "all" || card.dataset.subtopic === currentTopic);
           const visible = matchesScope && matchesTopic;
           card.classList.toggle("is-hidden", !visible);
           if (visible) visibleTopCards += 1;
@@ -248,7 +276,9 @@
 
         sectorPanels.forEach((panel) => {
           const panelScopeVisible = isScopeMatch(panel, currentScope);
-          const panelTopicVisible = currentScope !== "global" || currentTopic === "all" || panel.dataset.sector === currentTopic;
+          const panelTopicVisible = currentScope === "global"
+            ? (currentTopic === "all" || panel.dataset.sector === currentTopic)
+            : true;
 
           if (!panelScopeVisible || !panelTopicVisible) {
             panel.classList.add("is-hidden");
@@ -263,7 +293,11 @@
 
           let visibleStories = 0;
           storyCards.forEach((card) => {
-            const visible = isScopeMatch(card, currentScope);
+            const scopeVisible = isScopeMatch(card, currentScope);
+            const topicVisible = currentScope === "global"
+              ? true
+              : (currentTopic === "all" || card.dataset.subtopic === currentTopic);
+            const visible = scopeVisible && topicVisible;
             card.classList.toggle("is-hidden", !visible);
             if (visible) visibleStories += 1;
           });
@@ -280,9 +314,8 @@
         });
       });
 
-      selectableTopicButtons.forEach((button) => {
+      topicButtons.forEach((button) => {
         button.addEventListener("click", () => {
-          if (button.disabled) return;
           currentTopic = button.dataset.topic;
           applyFilters();
         });
@@ -322,8 +355,53 @@
         revealTargets.forEach((el) => observer.observe(el));
       }
 
+      function subtopicHue(subtopic) {
+        let hash = 0;
+        for (let i = 0; i < subtopic.length; i += 1) {
+          hash = (hash * 31 + subtopic.charCodeAt(i)) | 0;
+        }
+        return Math.abs(hash) % 360;
+      }
+
+      function decorateStories() {
+        const cards = Array.from(document.querySelectorAll(".story-card[data-score]"));
+        cards.forEach((card) => {
+          const rawScore = Number(card.dataset.score || 0);
+          const scaled = Math.max(1, Math.min(10, (rawScore / 4.4) * 10));
+          card.dataset.relevance = scaled.toFixed(1);
+
+          let tier = "low";
+          if (scaled >= 9) tier = "critical";
+          else if (scaled >= 7) tier = "high";
+          else if (scaled >= 4) tier = "medium";
+          card.dataset.relevanceTier = tier;
+
+          const subtopic = card.dataset.subtopic || "";
+          const hue = subtopicHue(subtopic);
+          card.style.setProperty("--subtopic-accent", `hsl(${hue} 85% 65%)`);
+
+          const chipRow = card.querySelector(".chip-row");
+          if (chipRow && !chipRow.querySelector(".relevance-pill")) {
+            const badge = document.createElement("span");
+            badge.className = "relevance-pill";
+            badge.textContent = `${scaled.toFixed(1)}/10`;
+            chipRow.appendChild(badge);
+          }
+        });
+
+        const grids = Array.from(document.querySelectorAll(".story-grid"));
+        grids.forEach((grid) => {
+          const sortable = Array.from(grid.querySelectorAll(".story-card[data-score]"));
+          if (sortable.length < 2) return;
+          sortable
+            .sort((a, b) => Number(b.dataset.score || 0) - Number(a.dataset.score || 0))
+            .forEach((el) => grid.appendChild(el));
+        });
+      }
+
       initRevealAnimations();
       initThemeToggle();
+      decorateStories();
 
       const AUTO_REFRESH_MS = 5 * 60 * 1000;
       setInterval(() => {

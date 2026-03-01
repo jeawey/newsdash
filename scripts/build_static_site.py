@@ -49,6 +49,7 @@ def _render_index(
     sectors: Dict[str, List[ScoredStory]],
     configured_sectors: List[str],
     configured_topics: List[str],
+    sector_subtopics: Dict[str, List[str]],
     asset_prefix: str,
 ) -> None:
     env = Environment(
@@ -62,6 +63,7 @@ def _render_index(
         sectors=sectors,
         configured_sectors=configured_sectors,
         configured_topics=configured_topics,
+        sector_subtopics=sector_subtopics,
         latest_story_ids=[],
         sector_colors=SECTOR_COLORS,
         asset_prefix=asset_prefix,
@@ -115,13 +117,18 @@ def build_site(output_dir: Path, asset_prefix: str, custom_domain: str) -> None:
         raw_stories = fetch_all_stories(source_config)
         scored_stories = score_stories(raw_stories, source_config.trusted_domains)
         configured_sectors: List[str] = []
+        sector_subtopics: Dict[str, List[str]] = {}
         for query in source_config.queries:
             if query.sector not in configured_sectors:
                 configured_sectors.append(query.sector)
+            subtopics = sector_subtopics.setdefault(query.sector, [])
+            if query.subtopic not in subtopics:
+                subtopics.append(query.subtopic)
     except Exception as exc:  # noqa: BLE001
         print(f"WARN: News build failed, publishing empty dashboard: {exc}")
         scored_stories = []
         configured_sectors = []
+        sector_subtopics = {}
 
     top_stories = scored_stories[:10]
     sectors = _group_by_sector(scored_stories, settings.max_items_per_sector)
@@ -137,6 +144,7 @@ def build_site(output_dir: Path, asset_prefix: str, custom_domain: str) -> None:
         sectors,
         configured_sectors,
         configured_topics,
+        sector_subtopics,
         asset_prefix,
     )
     _write_data_json(output_dir, snapshot_date, top_stories, sectors)
