@@ -18,6 +18,7 @@ from app.presentation import SECTOR_COLORS
 from app.schemas import DashboardResponse, StoryOut
 from app.settings import get_settings
 from worker.config import load_source_config
+from worker.utils import strip_html
 
 app = FastAPI(title="Constructive News")
 templates = Jinja2Templates(directory="app/templates")
@@ -251,6 +252,8 @@ def get_dashboard_data(
             update={
                 "sector": _normalize_sector_name(story.sector),
                 "source_name": _normalize_source_name(story.source_name, story.source_domain),
+                "title": strip_html(story.title),
+                "summary": strip_html(story.summary),
             }
         )
         sectors.setdefault(story_out.sector, []).append(story_out)
@@ -261,6 +264,8 @@ def get_dashboard_data(
             update={
                 "sector": _normalize_sector_name(s.sector),
                 "source_name": _normalize_source_name(s.source_name, s.source_domain),
+                "title": strip_html(s.title),
+                "summary": strip_html(s.summary),
             }
         )
         for s in top_story_pool

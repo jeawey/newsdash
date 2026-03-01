@@ -645,3 +645,14 @@ Für jeden Eintrag:
   - Mehr Themen-Diversität im Feed; pro Ereignis nur die 1-2 relevantesten Meldungen.
 - Rollback-Hinweis:
   - neue Similarity-Logik in `worker/store.py` entfernen.
+
+### 2026-03-02 00:04:20 CET | API/UI Failsafe (Titel/Summary beim Ausliefern sanitizen)
+- Änderung:
+  - `app/main.py`:
+    - Titel und Summary werden beim API-/Template-Output zusätzlich mit `strip_html()` bereinigt.
+- Grund:
+  - Garantiert saubere Anzeige auch bei bereits gespeicherten Alt-Datensätzen mit HTML-Artefakten.
+- Erwarteter Effekt:
+  - Keine `<a href=...>`-Fragmente mehr im Frontend, selbst wenn solche Werte in der DB vorhanden sind.
+- Rollback-Hinweis:
+  - `strip_html()`-Normalisierung im Output-Update von `app/main.py` entfernen.
