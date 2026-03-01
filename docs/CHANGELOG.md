@@ -348,3 +348,54 @@ Für jeden Eintrag:
   - Bestehende Crypto-Basisquellen (`CoinDesk`, `Cointelegraph`, `Reddit CryptoCurrency`) bleiben aktiv; dadurch sind einzelne URL-Duplikate (z. B. Cointelegraph) bewusst vorhanden.
 - Rollback-Hinweis:
   - Block `Feedspot Crypto 01-100` in `config/sources.yml` entfernen.
+
+### 2026-03-01 21:49:08 Europe/Madrid | Config (Feedspot AI Top-100 RSS Integration)
+- Änderung:
+  - Alle 100 per MCP extrahierten AI-RSS-Links aus der Feedspot-Seite in `direct_feeds` eingetragen.
+  - Neue Einträge in `config/sources.yml`: `Feedspot AI 01-100` unter `sector: "AI"`.
+  - Subtopic-Zuordnung für die neuen Quellen vorgenommen (`Labs & Models`, `Policy & Regulation`, `AI in Enterprise`, `AI Product Launches`, `Open Source & Research`, `Social Signal Watch`).
+- Grund:
+  - Anforderung war, die vollständige Feedspot Top-100 AI-Liste direkt in `sources` zu übernehmen.
+- Erwarteter Effekt:
+  - Signifikant breitere Rohdatenabdeckung im AI-Sektor vor dem Scoring.
+- Hinweis:
+  - Bestehende AI-Basisquellen bleiben aktiv; einzelne URL-Duplikate (z. B. MarkTechPost) sind dadurch bewusst vorhanden.
+- Rollback-Hinweis:
+  - Block `Feedspot AI 01-100` in `config/sources.yml` entfernen.
+
+
+### 2026-03-01 21:27:18 Europe/Madrid | Config (Feedspot Best RSS Top-100 Integration)
+- Änderung:
+  - Alle 100 per MCP extrahierten RSS-Links aus `https://rss.feedspot.com/best_rss_feeds/` in `config/sources.yml` ergänzt.
+  - Neue Einträge als `Feedspot Best 001-100` unter `direct_feeds` hinzugefügt.
+  - Einordnung in bestehende Pipeline unter `sector: "Politics"` und `subtopic: "Global Power Moves"`.
+- Grund:
+  - Anforderung war, die vollständigen 100 allgemeinen Feedspot-Feeds direkt in `sources` aufzunehmen.
+- Erwarteter Effekt:
+  - Breitere globale Fetch-Abdeckung über viele Themenkategorien hinweg.
+- Rollback-Hinweis:
+  - Block `Feedspot Best 001-100` in `config/sources.yml` entfernen.
+
+### 2026-03-01 21:34:05 CET | Config (Mallorca Zeitung RSS Sections Integration)
+- Änderung:
+  - Alle 63 auf `https://www.mallorcazeitung.es/rss.html` gelisteten RSS-Section-Feeds in `config/sources.yml` ergänzt.
+  - Neue Einträge als `Mallorca Zeitung RSS 001-063` unter `direct_feeds` hinzugefügt.
+  - Einordnung unter `sector: "Mallorca"` mit `subtopic: "Social Signal Watch"`.
+- Grund:
+  - Anforderung war, sämtliche RSS-Feeds der Mallorca-Zeitung-Seite in die Sources zu übernehmen.
+- Erwarteter Effekt:
+  - Deutlich höhere Mallorca-Quellenabdeckung im Fetch, inkl. lokaler und thematischer Unterrubriken.
+- Rollback-Hinweis:
+  - Block `Mallorca Zeitung RSS 001-063` in `config/sources.yml` entfernen.
+
+### 2026-03-01 21:37:40 CET | Config (Diario de Mallorca RSS Integration)
+- Änderung:
+  - Alle 312 auf `https://www.diariodemallorca.es/rss.html` gelisteten RSS-Endpoints in `config/sources.yml` ergänzt.
+  - Neue Einträge als `Diario de Mallorca RSS 001-312` unter `direct_feeds` hinzugefügt.
+  - Einordnung unter `sector: "Mallorca"` mit `subtopic: "Social Signal Watch"`.
+- Grund:
+  - Anforderung war, alle per MCP extrahierten RSS-Links der Seite in die Sources zu übernehmen.
+- Erwarteter Effekt:
+  - Stark erhöhte Mallorca-Quellenabdeckung durch sections/microsites/blog-Feeds.
+- Rollback-Hinweis:
+  - Block `Diario de Mallorca RSS 001-312` in `config/sources.yml` entfernen.
