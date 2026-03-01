@@ -272,7 +272,7 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
         "Hamburg": 6,
         "Mallorca": 6,
     }
-    inserted: list[Story] = []
+    inserted_ids: list[int] = []
     sectors_to_process = set(per_sector.keys()) | set(sector_minimum_targets.keys())
     for sector in sectors_to_process:
         sector_stories = per_sector.get(sector, [])
@@ -371,7 +371,10 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 fingerprint=story.fingerprint,
             )
             db.add(model)
-            inserted.append(model)
+            # Persist identity immediately so we can safely re-query surviving rows
+            # even if ORM instances are expired/deleted by later pruning.
+            db.flush()
+            inserted_ids.append(model.id)
             seen_urls.add(url_key)
             seen_fingerprints.add(story.fingerprint)
             seen_loose_fingerprints.add(loose_fp)
@@ -437,7 +440,6 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
 
     # Some freshly inserted rows can be pruned by the hard per-sector cap above.
     # Return only rows that still exist to avoid ObjectDeletedError downstream.
-    inserted_ids = [story.id for story in inserted if story.id is not None]
     if not inserted_ids:
         return []
     existing_inserted = db.scalars(
