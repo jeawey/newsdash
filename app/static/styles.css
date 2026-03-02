@@ -1055,6 +1055,431 @@ main {
   }
 }
 
+/* Astrophysics Section */
+.astrophysics-section {
+  --sector-accent: #67e8f9;
+}
+
+.astrophysics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0.76rem;
+  margin-bottom: 0.85rem;
+}
+
+.astro-card {
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(164, 195, 245, 0.23);
+  padding: 0.86rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 32px -24px rgba(0, 0, 0, 0.9);
+}
+
+:root[data-theme="light"] .astro-card {
+  border-color: rgba(105, 134, 173, 0.28);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(252, 250, 247, 0.85));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 12px 24px -22px rgba(27, 53, 93, 0.35);
+}
+
+.astro-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.astro-header h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.astro-value {
+  font-family: "Sora", sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-shadow: 0 0 24px -8px var(--glow);
+}
+
+.astro-meta {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* KP Index Styles */
+.kp-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.6rem;
+  font-family: "Sora", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  min-width: 2.4rem;
+}
+
+.kp-green {
+  background: linear-gradient(145deg, rgba(129, 255, 170, 0.8), rgba(105, 224, 155, 0.6));
+  box-shadow: 0 0 20px -8px rgba(129, 255, 170, 0.6);
+}
+
+.kp-yellow {
+  background: linear-gradient(145deg, rgba(255, 214, 124, 0.8), rgba(249, 186, 113, 0.6));
+  box-shadow: 0 0 20px -8px rgba(255, 214, 124, 0.6);
+}
+
+.kp-orange {
+  background: linear-gradient(145deg, rgba(255, 170, 109, 0.8), rgba(246, 144, 94, 0.6));
+  box-shadow: 0 0 20px -8px rgba(255, 170, 109, 0.6);
+}
+
+.kp-red {
+  background: linear-gradient(145deg, rgba(255, 106, 106, 0.8), rgba(255, 66, 66, 0.6));
+  box-shadow: 0 0 20px -8px rgba(255, 106, 106, 0.6);
+  animation: pulse-red 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Aurora Styles */
+.aurora-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.aurora-none {
+  background: linear-gradient(145deg, rgba(164, 164, 164, 0.8), rgba(140, 140, 140, 0.6));
+}
+
+.aurora-low {
+  background: linear-gradient(145deg, rgba(129, 255, 170, 0.8), rgba(105, 224, 155, 0.6));
+}
+
+.aurora-moderate {
+  background: linear-gradient(145deg, rgba(255, 214, 124, 0.8), rgba(249, 186, 113, 0.6));
+}
+
+.aurora-high {
+  background: linear-gradient(145deg, rgba(255, 170, 109, 0.8), rgba(246, 144, 94, 0.6));
+}
+
+.aurora-very-high {
+  background: linear-gradient(145deg, rgba(255, 106, 106, 0.8), rgba(255, 66, 66, 0.6));
+  box-shadow: 0 0 20px -8px rgba(255, 106, 106, 0.6);
+}
+
+/* Solar Metrics */
+.solar-metrics {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.solar-metric {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.solar-metric:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.metric-value {
+  font-family: "Sora", sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* Warnings */
+.warnings-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.warning-item {
+  padding: 0.6rem;
+  border-radius: 10px;
+  margin-bottom: 0.4rem;
+  border: 1px solid;
+}
+
+.warning-item:last-child {
+  margin-bottom: 0;
+}
+
+.warning-orange {
+  border-color: rgba(255, 170, 109, 0.5);
+  background: linear-gradient(145deg, rgba(255, 170, 109, 0.2), rgba(246, 144, 94, 0.1));
+}
+
+.warning-red {
+  border-color: rgba(255, 106, 106, 0.5);
+  background: linear-gradient(145deg, rgba(255, 106, 106, 0.2), rgba(255, 66, 66, 0.1));
+  animation: warning-pulse 2s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 106, 106, 0); }
+  50% { box-shadow: 0 0 16px -4px rgba(255, 106, 106, 0.3); }
+}
+
+.warning-title {
+  display: block;
+  font-weight: 700;
+  font-size: 0.82rem;
+  margin-bottom: 0.2rem;
+  color: var(--ink);
+}
+
+.warning-message {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.warning-expires {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  opacity: 0.8;
+}
+
+/* Earthquakes */
+.earthquakes-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.quake-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  margin-bottom: 0.4rem;
+  border: 1px solid var(--line);
+}
+
+.quake-item:last-child {
+  margin-bottom: 0;
+}
+
+.quake-magnitude {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  font-family: "Sora", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.mag-4 {
+  background: linear-gradient(145deg, rgba(129, 255, 170, 0.8), rgba(105, 224, 155, 0.6));
+}
+
+.mag-5 {
+  background: linear-gradient(145deg, rgba(255, 214, 124, 0.8), rgba(249, 186, 113, 0.6));
+}
+
+.mag-6 {
+  background: linear-gradient(145deg, rgba(255, 170, 109, 0.8), rgba(246, 144, 94, 0.6));
+}
+
+.mag-7,
+.mag-8,
+.mag-9 {
+  background: linear-gradient(145deg, rgba(255, 106, 106, 0.8), rgba(255, 66, 66, 0.6));
+}
+
+.quake-place {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.quake-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Events */
+.events-list {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.event-item {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  margin-bottom: 0.4rem;
+  border: 1px solid var(--line);
+}
+
+.event-item:last-child {
+  margin-bottom: 0;
+}
+
+.event-date {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  font-family: "Sora", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: linear-gradient(145deg, rgba(103, 232, 249, 0.2), rgba(79, 140, 255, 0.1));
+  border: 1px solid rgba(103, 232, 249, 0.3);
+  flex-shrink: 0;
+}
+
+.event-name {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.event-desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* Videos */
+.videos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.video-item {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.video-link {
+  display: flex;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.5rem;
+}
+
+.video-thumb {
+  width: 80px;
+  height: 45px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.video-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.video-title {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.3;
+}
+
+.video-link:hover .video-title {
+  color: var(--accent);
+}
+
+.video-duration {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* Astro Footer */
+.astro-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--line);
+}
+
+.astro-refresh-btn {
+  border: 1px solid rgba(164, 195, 245, 0.3);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03));
+  color: #e0eeff;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  font-family: "Manrope", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 150ms ease, border-color 160ms ease, box-shadow 180ms ease;
+}
+
+.astro-refresh-btn:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(103, 232, 249, 0.2), 0 10px 22px -18px var(--glow);
+}
+
+.astro-refresh-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+:root[data-theme="light"] .astro-refresh-btn {
+  color: #0f3459;
+  border-color: rgba(83, 129, 188, 0.45);
+  background: linear-gradient(145deg, rgba(32, 201, 151, 0.58), rgba(255, 255, 255, 0.9));
+}
+
 @media (max-width: 900px) {
   .hero {
     flex-direction: column;

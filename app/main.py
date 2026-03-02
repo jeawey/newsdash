@@ -20,6 +20,7 @@ from app.database import engine
 from app.presentation import SECTOR_COLORS
 from app.schemas import DashboardResponse, StoryOut
 from app.settings import get_settings
+from worker.astrophysics import AstrophysicsData
 from worker.config import load_source_config
 from worker.utils import strip_html
 
@@ -257,6 +258,23 @@ def get_job_runs(
     }
 
 
+_astrophysics_data = AstrophysicsData()
+
+
+@app.get("/api/astrophysics/live")
+def get_astrophysics_live() -> dict[str, Any]:
+    """Get all live astrophysics data (KP index, aurora, solar, earthquakes, videos, events, warnings)."""
+    return _astrophysics_data.get_all_live_data()
+
+
+@app.get("/api/astrophysics/events")
+def get_astrophysics_events(
+    days: int = Query(default=7, ge=1, le=30),
+) -> dict[str, Any]:
+    """Get upcoming astronomical events."""
+    return {"events": _astrophysics_data.get_upcoming_events(days=days)}
+
+
 @app.get("/api/stories", response_model=DashboardResponse)
 def get_dashboard_data(
     snapshot_date: Optional[str] = Query(default=None),
@@ -330,6 +348,21 @@ def _get_last_update_time(db: Session) -> Optional[str]:
     tz = pytz.timezone(settings.timezone)
     local_time = last_run.finished_at.astimezone(tz)
     return local_time.strftime("%H:%M")
+
+
+@app.get("/api/astrophysics/live")
+def get_astrophysics_live_data() -> dict[str, object]:
+    """Get all live astrophysics data including KP index, aurora, solar activity, earthquakes, videos, events, and warnings."""
+    data_fetcher = AstrophysicsData()
+    return data_fetcher.get_all_live_data()
+
+
+@app.get("/api/astrophysics/events")
+def get_astrophysics_events(days: int = Query(default=7, ge=1, le=30)) -> dict[str, object]:
+    """Get upcoming astronomical events within the specified number of days."""
+    data_fetcher = AstrophysicsData()
+    events = data_fetcher.get_upcoming_events(days=days)
+    return {"events": events, "days": days, "count": len(events)}
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -179,6 +179,99 @@
       </section>
       {% endfor %}
 
+      <section class="panel glass-panel astrophysics-section" id="astrophysics-section">
+        <div class="panel-head">
+          <h2>Astrophysik Live</h2>
+          <p>Echtzeit-Daten: Geomagnetik, Aurora, Sonnenaktivität, Erdbeben, Planeten</p>
+        </div>
+        <div class="astrophysics-grid">
+          <!-- KP Index Card -->
+          <div class="astro-card kp-card">
+            <div class="astro-header">
+              <h3>KP-Index</h3>
+              <span class="kp-badge kp-green" id="kp-badge">--</span>
+            </div>
+            <div class="astro-value" id="kp-value">--</div>
+            <p class="astro-meta" id="kp-time">Laden...</p>
+          </div>
+
+          <!-- Aurora Forecast Card -->
+          <div class="astro-card aurora-card">
+            <div class="astro-header">
+              <h3>Aurora</h3>
+              <span class="aurora-badge aurora-none" id="aurora-badge">--</span>
+            </div>
+            <div class="astro-value" id="aurora-score">--%</div>
+            <p class="astro-meta" id="aurora-locations">-- Standorte</p>
+          </div>
+
+          <!-- Solar Activity Card -->
+          <div class="astro-card solar-card">
+            <div class="astro-header">
+              <h3>Sonnenaktivität</h3>
+            </div>
+            <div class="solar-metrics">
+              <div class="solar-metric">
+                <span class="metric-label">Sonnenflecken</span>
+                <span class="metric-value" id="sunspots">--</span>
+              </div>
+              <div class="solar-metric">
+                <span class="metric-label">Windgeschwindigkeit</span>
+                <span class="metric-value" id="solar-wind">-- km/s</span>
+              </div>
+              <div class="solar-metric">
+                <span class="metric-label">Bz</span>
+                <span class="metric-value" id="solar-bz">-- nT</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Warnings Card -->
+          <div class="astro-card warnings-card" id="warnings-card">
+            <div class="astro-header">
+              <h3>Warnungen</h3>
+            </div>
+            <div class="warnings-list" id="warnings-list">
+              <p class="astro-meta">Keine aktiven Warnungen</p>
+            </div>
+          </div>
+
+          <!-- Earthquakes Card -->
+          <div class="astro-card earthquakes-card">
+            <div class="astro-header">
+              <h3>Erdbeben (M≥4.5)</h3>
+            </div>
+            <div class="earthquakes-list" id="earthquakes-list">
+              <p class="astro-meta">Laden...</p>
+            </div>
+          </div>
+
+          <!-- Upcoming Events Card -->
+          <div class="astro-card events-card">
+            <div class="astro-header">
+              <h3>Bevorstehende Events</h3>
+            </div>
+            <div class="events-list" id="events-list">
+              <p class="astro-meta">Laden...</p>
+            </div>
+          </div>
+
+          <!-- Stefan Burns Videos Card -->
+          <div class="astro-card videos-card">
+            <div class="astro-header">
+              <h3>Stefan Burns Videos</h3>
+            </div>
+            <div class="videos-list" id="videos-list">
+              <p class="astro-meta">Laden...</p>
+            </div>
+          </div>
+        </div>
+        <div class="astro-footer">
+          <p class="astro-meta" id="astro-last-update">Zuletzt aktualisiert: --</p>
+          <button class="astro-refresh-btn" id="astro-refresh" type="button">Aktualisieren</button>
+        </div>
+      </section>
+
       <section class="panel glass-panel relevance-legend">
         <div class="panel-head">
           <h2>Relevanz-Legende</h2>
@@ -589,6 +682,192 @@
       }
 
       setInterval(checkForUpdates, AUTO_REFRESH_MS);
+
+      // Astrophysics Live Data
+      const astroRefreshBtn = document.getElementById("astro-refresh");
+      const astroLastUpdate = document.getElementById("astro-last-update");
+
+      async function fetchAstrophysicsData() {
+        try {
+          const resp = await fetch("/api/astrophysics/live");
+          if (!resp.ok) throw new Error("Failed to fetch");
+          return await resp.json();
+        } catch (err) {
+          console.error("Astrophysics fetch error:", err);
+          return null;
+        }
+      }
+
+      function updateKPIndex(kpData) {
+        const kpValue = kpData.kp_value || 0;
+        const kpClass = kpData.kp_class || "green";
+
+        const kpBadge = document.getElementById("kp-badge");
+        const kpValueEl = document.getElementById("kp-value");
+        const kpTime = document.getElementById("kp-time");
+
+        if (kpBadge) {
+          kpBadge.textContent = kpValue;
+          kpBadge.className = `kp-badge kp-${kpClass}`;
+        }
+        if (kpValueEl) kpValueEl.textContent = kpValue;
+        if (kpTime && kpData.time_tag) {
+          kpTime.textContent = new Date(kpData.time_tag).toLocaleString("de-DE");
+        }
+      }
+
+      function updateAurora(auroraData) {
+        const visibilityScore = auroraData.visibility_score || 0;
+        const auroraClass = auroraData.aurora_class || "none";
+
+        const auroraBadge = document.getElementById("aurora-badge");
+        const auroraScore = document.getElementById("aurora-score");
+        const auroraLocations = document.getElementById("aurora-locations");
+
+        if (auroraBadge) {
+          auroraBadge.textContent = auroraClass.toUpperCase().replace("-", " ");
+          auroraBadge.className = `aurora-badge aurora-${auroraClass}`;
+        }
+        if (auroraScore) auroraScore.textContent = `${visibilityScore}%`;
+        if (auroraLocations) auroraLocations.textContent = `${auroraData.locations_count || 0} Standorte`;
+      }
+
+      function updateSolar(solarData) {
+        const sunspots = solarData.sunspots || 0;
+        const solarWindSpeed = solarData.solar_wind_speed || null;
+        const solarWindDensity = solarData.solar_wind_density || null;
+        const solarWindBz = solarData.solar_wind_bz || null;
+
+        const sunspotsEl = document.getElementById("sunspots");
+        const solarWindEl = document.getElementById("solar-wind");
+        const solarBzEl = document.getElementById("solar-bz");
+
+        if (sunspotsEl) sunspotsEl.textContent = sunspots;
+        if (solarWindEl) solarWindEl.textContent = solarWindSpeed ? `${solarWindSpeed} km/s` : "--";
+        if (solarBzEl) solarBzEl.textContent = solarWindBz !== null ? `${solarWindBz > 0 ? "+" : ""}${solarWindBz} nT` : "--";
+      }
+
+      function updateWarnings(warnings) {
+        const warningsList = document.getElementById("warnings-list");
+        const warningsCard = document.getElementById("warnings-card");
+
+        if (!warningsList) return;
+
+        if (!warnings || warnings.length === 0) {
+          warningsList.innerHTML = '<p class="astro-meta">Keine aktiven Warnungen</p>';
+          if (warningsCard) warningsCard.classList.remove("has-warnings");
+          return;
+        }
+
+        warningsList.innerHTML = warnings.map(w => `
+          <div class="warning-item warning-${w.severity}">
+            <span class="warning-title">${w.title}</span>
+            <p class="warning-message">${w.message}</p>
+            <p class="warning-expires">Gültig: ${w.expires}</p>
+          </div>
+        `).join("");
+
+        if (warningsCard) warningsCard.classList.add("has-warnings");
+      }
+
+      function updateEarthquakes(quakes) {
+        const earthquakesList = document.getElementById("earthquakes-list");
+
+        if (!earthquakesList) return;
+
+        if (!quakes || quakes.length === 0) {
+          earthquakesList.innerHTML = '<p class="astro-meta">Keine Erdbeben in den letzten 24 Stunden</p>';
+          return;
+        }
+
+        earthquakesList.innerHTML = quakes.map(q => `
+          <div class="quake-item">
+            <span class="quake-magnitude mag-${Math.floor(q.magnitude)}">${q.magnitude.toFixed(1)}</span>
+            <div class="quake-details">
+              <p class="quake-place">${q.place || "Unbekannter Ort"}</p>
+              <p class="quake-meta">${new Date(q.time).toLocaleString("de-DE")} · Tiefe: ${q.depth ? q.depth.toFixed(1) + " km" : "--"}</p>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      function updateEvents(events) {
+        const eventsList = document.getElementById("events-list");
+
+        if (!eventsList) return;
+
+        if (!events || events.length === 0) {
+          eventsList.innerHTML = '<p class="astro-meta">Keine kommenden Events</p>';
+          return;
+        }
+
+        eventsList.innerHTML = events.map(e => `
+          <div class="event-item">
+            <span class="event-date">${e.date}</span>
+            <div class="event-details">
+              <p class="event-name">${e.name}</p>
+              <p class="event-desc">${e.description}</p>
+            </div>
+          </div>
+        `).join("");
+      }
+
+      function updateVideos(videos) {
+        const videosList = document.getElementById("videos-list");
+
+        if (!videosList) return;
+
+        if (!videos || videos.length === 0) {
+          videosList.innerHTML = '<p class="astro-meta">Keine Videos verfügbar</p>';
+          return;
+        }
+
+        videosList.innerHTML = videos.map(v => `
+          <div class="video-item">
+            <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" rel="noopener" class="video-link">
+              ${v.thumbnail ? `<img src="${v.thumbnail}" alt="${v.title}" class="video-thumb" loading="lazy" />` : ''}
+              <div class="video-info">
+                <p class="video-title">${v.title}</p>
+                <p class="video-duration">${v.duration}</p>
+              </div>
+            </a>
+          </div>
+        `).join("");
+      }
+
+      function updateAstrophysicsUI(data) {
+        if (!data) return;
+
+        updateKPIndex(data.kp_index || {});
+        updateAurora(data.aurora || {});
+        updateSolar(data.solar || {});
+        updateWarnings(data.warnings || []);
+        updateEarthquakes(data.earthquakes || []);
+        updateEvents(data.events || []);
+        updateVideos(data.videos || []);
+
+        if (astroLastUpdate && data.last_updated) {
+          astroLastUpdate.textContent = `Zuletzt aktualisiert: ${new Date(data.last_updated).toLocaleString("de-DE")}`;
+        }
+      }
+
+      async function loadAstrophysicsData() {
+        if (astroRefreshBtn) astroRefreshBtn.disabled = true;
+        const data = await fetchAstrophysicsData();
+        updateAstrophysicsUI(data);
+        if (astroRefreshBtn) astroRefreshBtn.disabled = false;
+      }
+
+      // Initialize astrophysics data
+      loadAstrophysicsData();
+
+      // Refresh button handler
+      if (astroRefreshBtn) {
+        astroRefreshBtn.addEventListener("click", loadAstrophysicsData);
+      }
+
+      // Auto-refresh astrophysics data every 3 minutes
+      setInterval(loadAstrophysicsData, 3 * 60 * 1000);
     </script>
   </body>
 </html>
