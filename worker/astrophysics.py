@@ -149,11 +149,34 @@ class AstrophysicsData:
             solar_response.raise_for_status()
             solar_data = solar_response.json()
 
+            # Parse solar wind data - handle different API response formats
+            wind_speed = None
+            wind_density = None
+            wind_bz = None
+
+            if isinstance(solar_data, list) and len(solar_data) > 1:
+                # Old format: array of readings
+                latest = solar_data[1]
+                wind_speed = latest.get("speed")
+                wind_density = latest.get("density")
+                wind_bz = latest.get("bz_gsm")
+            elif isinstance(solar_data, list) and len(solar_data) > 0:
+                # New format: array with different structure
+                latest = solar_data[0]
+                wind_speed = latest.get("speed") or latest.get("solar_wind_speed")
+                wind_density = latest.get("density") or latest.get("proton_density")
+                wind_bz = latest.get("bz") or latest.get("bz_gsm")
+            elif isinstance(solar_data, dict):
+                # Dict format
+                wind_speed = solar_data.get("speed") or solar_data.get("solar_wind_speed")
+                wind_density = solar_data.get("density") or solar_data.get("proton_density")
+                wind_bz = solar_data.get("bz") or solar_data.get("bz_gsm")
+
             result = {
                 "sunspots": self._get_sunspot_count(),
-                "solar_wind_speed": solar_data[1].get("speed") if len(solar_data) > 1 else None,
-                "solar_wind_density": solar_data[1].get("density") if len(solar_data) > 1 else None,
-                "solar_wind_bz": solar_data[1].get("bz_gsm") if len(solar_data) > 1 else None,
+                "solar_wind_speed": wind_speed,
+                "solar_wind_density": wind_density,
+                "solar_wind_bz": wind_bz,
                 "latest_flares": self._get_latest_flares(),
                 "updated_at": datetime.now().isoformat(),
             }
