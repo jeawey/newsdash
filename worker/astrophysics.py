@@ -22,9 +22,9 @@ class AstrophysicsData:
     """Fetches and caches astrophysics live data."""
 
     # API URLs
-    NOAA_KP_INDEX = "https://services.swpc.noaa.gov/json/planetary-k-index-3-hour.json"
-    NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation_aurora_forecast.json"
-    NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind-plasma-2-hour.json"
+    NOAA_KP_INDEX = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+    NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation-aurora-now.json"  # Deprecated, may not work
+    NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json"
     USGS_EARTHQUAKES = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
     STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?channel_id=UCGutiiMqD6jEy6J9hNdNniA"
 
@@ -57,21 +57,30 @@ class AstrophysicsData:
             response.raise_for_status()
             data = response.json()
 
-            latest = data[0] if data else None
-            if latest:
-                kp_value = latest.get("kp_value", 0)
-                kp_class = self._classify_kp(kp_value)
+            # New format: list of arrays, first row is header
+            # [['time_tag', 'Kp', 'a_running', 'station_count'], ['2026-02-23 00:00:00.000', '3.67', '22', '8']]
+            if isinstance(data, list) and len(data) > 1:
+                latest_row = data[1]  # Skip header row
+                if isinstance(latest_row, list) and len(latest_row) >= 2:
+                    time_tag = latest_row[0]
+                    kp_value_str = latest_row[1]
 
-                result = {
-                    "kp_index": latest.get("kp_index", 0),
-                    "kp_value": kp_value,
-                    "kp_class": kp_class,
-                    "time_tag": latest.get("time_tag"),
-                    "updated_at": datetime.now().isoformat(),
-                }
+                    try:
+                        kp_value = float(kp_value_str)
+                        kp_class = self._classify_kp(int(kp_value))
 
-                self._kp_cache = (datetime.now().timestamp(), result)
-                return result
+                        result = {
+                            "kp_index": kp_value,
+                            "kp_value": int(kp_value),
+                            "kp_class": kp_class,
+                            "time_tag": time_tag,
+                            "updated_at": datetime.now().isoformat(),
+                        }
+
+                        self._kp_cache = (datetime.now().timestamp(), result)
+                        return result
+                    except (ValueError, TypeError):
+                        pass
 
         except Exception as e:
             logger.warning(f"Failed to fetch KP index: {e}")
@@ -154,18 +163,26 @@ class AstrophysicsData:
             wind_density = None
             wind_bz = None
 
+            # New NOAA format: list of arrays, first row is header
+            # [['time_tag', 'density', 'speed', 'temperature'], ['2026-03-02 21:04:00.000', '7.73', '313.8', '37939']]
             if isinstance(solar_data, list) and len(solar_data) > 1:
-                # Old format: array of readings
-                latest = solar_data[1]
-                wind_speed = latest.get("speed")
-                wind_density = latest.get("density")
-                wind_bz = latest.get("bz_gsm")
+                latest_row = solar_data[1]  # Skip header row
+                if isinstance(latest_row, list) and len(latest_row) >= 3:
+                    # Format: [time_tag, density, speed, temperature]
+                    wind_density = latest_row[1]
+                    wind_speed = latest_row[2]
+                    try:
+                        wind_density = float(wind_density)
+                        wind_speed = float(wind_speed)
+                    except (ValueError, TypeError):
+                        pass
             elif isinstance(solar_data, list) and len(solar_data) > 0:
-                # New format: array with different structure
+                # Try old format: array of dicts
                 latest = solar_data[0]
-                wind_speed = latest.get("speed") or latest.get("solar_wind_speed")
-                wind_density = latest.get("density") or latest.get("proton_density")
-                wind_bz = latest.get("bz") or latest.get("bz_gsm")
+                if isinstance(latest, dict):
+                    wind_speed = latest.get("speed") or latest.get("solar_wind_speed")
+                    wind_density = latest.get("density") or latest.get("proton_density")
+                    wind_bz = latest.get("bz") or latest.get("bz_gsm")
             elif isinstance(solar_data, dict):
                 # Dict format
                 wind_speed = solar_data.get("speed") or solar_data.get("solar_wind_speed")
