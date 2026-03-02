@@ -3,7 +3,6 @@
 
 import httpx
 import re
-from bs4 import BeautifulSoup
 
 # KP Index sources
 KP_SOURCES = [
