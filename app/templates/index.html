@@ -261,10 +261,20 @@
         storyCards: Array.from(panel.querySelectorAll(".sector-story")),
         topicEmpty: panel.querySelector('[data-role="topic-empty"]'),
         showMoreBtn: panel.querySelector('[data-role="show-more"]'),
+        visibleCount: 0,
       }));
-      const DEFAULT_VISIBLE_PER_PANEL = 16;
+      const VISIBLE_MOBILE = 4;
+      const VISIBLE_DESKTOP = 8;
       let currentScope = "global";
       let currentTopic = "all";
+
+      function getVisibleStep() {
+        return window.innerWidth < 768 ? VISIBLE_MOBILE : VISIBLE_DESKTOP;
+      }
+
+      function getInitialVisible() {
+        return getVisibleStep();
+      }
 
       function activeTopicButtons() {
         return topicButtons.filter((button) => button.closest(".topic-group")?.dataset.topicScope === currentScope);
@@ -370,13 +380,12 @@
             card.classList.add("is-hidden");
           });
 
-          const expanded = panel.dataset.expanded === "true";
-          const visibleCount = expanded
-            ? matchingStories.length
-            : Math.min(DEFAULT_VISIBLE_PER_PANEL, matchingStories.length);
+          const step = getVisibleStep();
+          let visibleCount = panelStates.find(p => p.panel === panel)?.visibleCount || getInitialVisible();
+          const totalVisible = Math.min(visibleCount, matchingStories.length);
 
           matchingStories.forEach((card, index) => {
-            const visible = index < visibleCount;
+            const visible = index < totalVisible;
             card.classList.toggle("is-hidden", !visible);
             if (visible) card.classList.add("is-visible");
           });
@@ -390,18 +399,17 @@
 
           if (showMoreBtn) {
             if (matchingStories.length === 0) {
-              panel.dataset.expanded = "false";
               showMoreBtn.classList.add("is-hidden");
               return;
             }
-            const hiddenCount = Math.max(0, matchingStories.length - DEFAULT_VISIBLE_PER_PANEL);
-            const canExpand = hiddenCount > 0;
-            showMoreBtn.classList.toggle("is-hidden", !canExpand && !expanded);
-            if (canExpand) {
-              showMoreBtn.textContent = expanded
-                ? "Weniger anzeigen"
-                : `Mehr anzeigen (${hiddenCount})`;
-            } else if (expanded) {
+            const hiddenCount = Math.max(0, matchingStories.length - totalVisible);
+            const isFullyExpanded = totalVisible >= matchingStories.length;
+            const stepSize = step;
+            showMoreBtn.classList.toggle("is-hidden", isFullyExpanded && totalVisible <= stepSize);
+            if (hiddenCount > 0) {
+              const loadCount = Math.min(stepSize, hiddenCount);
+              showMoreBtn.textContent = `Mehr anzeigen (+${loadCount})`;
+            } else if (totalVisible > stepSize) {
               showMoreBtn.textContent = "Weniger anzeigen";
             }
           }
@@ -412,9 +420,7 @@
         button.addEventListener("click", () => {
           currentScope = button.dataset.scope;
           if (currentScope !== "global") currentTopic = "all";
-          sectorPanels.forEach((panel) => {
-            panel.dataset.expanded = "false";
-          });
+          panelStates.forEach(state => state.visibleCount = getInitialVisible());
           applyFilters();
         });
       });
@@ -422,22 +428,54 @@
       topicButtons.forEach((button) => {
         button.addEventListener("click", () => {
           currentTopic = button.dataset.topic;
-          sectorPanels.forEach((panel) => {
-            panel.dataset.expanded = "false";
-          });
+          panelStates.forEach(state => state.visibleCount = getInitialVisible());
           applyFilters();
         });
       });
 
       panelStates.forEach(({ panel, showMoreBtn }) => {
         if (!showMoreBtn) return;
-        panel.dataset.expanded = "false";
         showMoreBtn.addEventListener("click", () => {
-          panel.dataset.expanded = panel.dataset.expanded === "true" ? "false" : "true";
+          const state = panelStates.find(s => s.panel === panel);
+          if (!state) return;
+          const step = getVisibleStep();
+          const storyCards = Array.from(panel.querySelectorAll(".sector-story"));
+          const matchingStories = storyCards.filter((card) => {
+            const scopeVisible = isScopeMatch(card, currentScope);
+            const topicVisible = currentScope === "global"
+              ? true
+              : (currentTopic === "all" || card.dataset.subtopic === currentTopic);
+            return scopeVisible && topicVisible;
+          });
+          if (state.visibleCount > step) {
+            state.visibleCount = step;
+          } else {
+            state.visibleCount = Math.min(state.visibleCount + step, matchingStories.length);
+          }
           applyFilters();
         });
       });
       applyFilters();
+
+      window.addEventListener("resize", () => {
+        const newStep = getVisibleStep();
+        panelStates.forEach((state) => {
+          state.visibleCount = Math.min(state.visibleCount, newStep);
+        });
+        applyFilters();
+      });
+
+      let resizeTimeout;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          const newStep = getVisibleStep();
+          panelStates.forEach((state) => {
+            state.visibleCount = Math.min(state.visibleCount, newStep);
+          });
+          applyFilters();
+        }, 200);
+      });
 
       function initRevealAnimations() {
         const revealTargets = Array.from(
