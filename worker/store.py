@@ -579,11 +579,8 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 return False, "duplicate_fingerprint"
             if enforce_loose_dedupe and sector not in relaxed_dedupe_sectors and loose_fp in seen_loose_fingerprints:
                 return False, "duplicate_loose_fingerprint"
-            domain_cap = settings.max_items_per_domain_per_sector
-            if sector in expanded_domain_cap_sectors:
-                domain_cap += 4
-            if enforce_domain_cap and domain_counts[story.source_domain] >= domain_cap:
-                return False, "domain_cap"
+            # Domain cap removed - allow multiple stories from same publisher
+            # as long as they're not content duplicates (URL, fingerprint, content clustering)
             cluster_limit = _max_similar_per_cluster_for_sector(
                 sector,
                 settings.max_similar_stories_per_cluster,
