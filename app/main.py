@@ -318,6 +318,20 @@ def get_dashboard_data(
     return DashboardResponse(snapshot_date=target_date, sectors=sectors, top_stories=top_stories)
 
 
+def _get_last_update_time(db: Session) -> Optional[str]:
+    last_run = db.scalars(
+        select(JobRun)
+        .where(JobRun.status == "success")
+        .order_by(desc(JobRun.started_at))
+        .limit(1)
+    ).first()
+    if not last_run or not last_run.finished_at:
+        return None
+    tz = pytz.timezone(settings.timezone)
+    local_time = last_run.finished_at.astimezone(tz)
+    return local_time.strftime("%H:%M")
+
+
 @app.get("/", response_class=HTMLResponse)
 def dashboard(
     request: Request,
@@ -325,6 +339,7 @@ def dashboard(
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     payload = get_dashboard_data(snapshot_date=snapshot_date, db=db)
+    last_update_time = _get_last_update_time(db)
 
     hot_candidates: list[StoryOut] = []
     hot_candidates.extend(payload.top_stories)
@@ -353,6 +368,7 @@ def dashboard(
         {
             "request": request,
             "snapshot_date": payload.snapshot_date.isoformat(),
+            "last_update_time": last_update_time,
             "latest_story_ids": latest_story_ids,
             "top_stories": payload.top_stories,
             "sectors": payload.sectors,

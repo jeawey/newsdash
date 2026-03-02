@@ -41,7 +41,7 @@
         <img src="{{ assets }}/logo.svg" alt="Constructive News Logo" class="logo" />
         <div>
           <h1>Constructive News</h1>
-          <p class="subtitle">Stichtag: {{ snapshot_date }} · Nur aktuelle Meldungen</p>
+          <p class="subtitle">Stichtag: {{ snapshot_date }}{% if last_update_time %} · Update: {{ last_update_time }} Uhr{% endif %}</p>
         </div>
       </div>
       <div class="hero-right">
