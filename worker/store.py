@@ -460,7 +460,16 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     for sector in sectors_to_process:
         sector_stories = per_sector.get(sector, [])
         existing_rows = db.execute(
-            select(Story.id, Story.url, Story.fingerprint, Story.title, Story.summary, Story.source_domain).where(
+            select(
+                Story.id,
+                Story.url,
+                Story.fingerprint,
+                Story.title,
+                Story.summary,
+                Story.source_domain,
+                Story.score,
+                Story.published_at,
+            ).where(
                 Story.snapshot_date == snapshot_date,
                 Story.sector == sector,
             )
@@ -503,11 +512,20 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
 
         existing_count = len(existing_rows)
         sector_limit_remaining = max(0, settings.max_items_per_sector - existing_count)
-        if sector_limit_remaining == 0:
-            # Sector already full for current snapshot; skip costly insert/prune churn.
-            continue
+        replacement_mode = sector_limit_remaining == 0 and existing_count > 0
+        max_replacements = max(0, settings.max_replacements_per_sector_per_run)
+        replacement_candidates = sorted(
+            existing_rows,
+            key=lambda row: (row.score if row.score is not None else 0.0, row.published_at, row.id),
+        )
+        replacements_done = 0
 
         sector_limit = sector_limit_remaining
+        if replacement_mode:
+            sector_limit = max_replacements
+            if sector_limit <= 0:
+                continue
+
         sector_target = sector_minimum_targets.get(sector, settings.min_items_per_sector_target)
         sector_target_remaining = max(0, sector_target - existing_count)
         sector_target = min(sector_target_remaining, sector_limit)
@@ -614,6 +632,36 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
             sector_inserted += 1
             insert_counts[sector] += 1
 
+        def _replace_lowest_existing(story: ScoredStory) -> tuple[bool, str | None]:
+            nonlocal replacements_done, sector_inserted
+            if not replacement_mode:
+                return False, "replacement_mode_disabled"
+            if replacements_done >= sector_limit or not replacement_candidates:
+                return False, "replacement_limit_reached"
+
+            target = replacement_candidates[0]
+            target_score = target.score if target.score is not None else 0.0
+            if story.score < (target_score + settings.min_replacement_score_delta):
+                return False, "replacement_not_stronger"
+
+            removed = replacement_candidates.pop(0)
+            db.execute(delete(Story).where(Story.id == removed.id))
+            drop_reason_counts[sector]["replaced_low_score_existing"] += 1
+
+            removed_url = canonicalize_url(removed.url)
+            seen_urls.discard(removed_url)
+            seen_fingerprints.discard(removed.fingerprint)
+            seen_loose_fingerprints.discard(fingerprint_title_loose(removed.title or ""))
+            removed_cluster_key = _content_cluster_key(removed.title or "", removed.summary or "")
+            if content_cluster_counts[removed_cluster_key] > 0:
+                content_cluster_counts[removed_cluster_key] -= 1
+            if domain_counts[removed.source_domain] > 0:
+                domain_counts[removed.source_domain] -= 1
+
+            _insert_story(story)
+            replacements_done += 1
+            return True, None
+
         if sector in local_quota_sectors:
             by_subtopic: dict[str, list[ScoredStory]] = defaultdict(list)
             for story in sorted_sector_stories:
@@ -629,7 +677,14 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                         if reason:
                             drop_reason_counts[sector][reason] += 1
                         continue
-                    _insert_story(story)
+                    if replacement_mode:
+                        replaced, replace_reason = _replace_lowest_existing(story)
+                        if not replaced:
+                            if replace_reason:
+                                drop_reason_counts[sector][replace_reason] += 1
+                            continue
+                    else:
+                        _insert_story(story)
                     subtopic_inserted += 1
                     if subtopic_inserted >= settings.min_items_per_local_subtopic:
                         break
@@ -642,9 +697,16 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
                 if reason:
                     drop_reason_counts[sector][reason] += 1
                 continue
-            _insert_story(story)
+            if replacement_mode:
+                replaced, replace_reason = _replace_lowest_existing(story)
+                if not replaced:
+                    if replace_reason:
+                        drop_reason_counts[sector][replace_reason] += 1
+                    continue
+            else:
+                _insert_story(story)
 
-        if sector_inserted < sector_target:
+        if (not replacement_mode) and sector_inserted < sector_target:
             for story in sorted_sector_stories:
                 if sector_inserted >= sector_target or sector_inserted >= sector_limit:
                     break

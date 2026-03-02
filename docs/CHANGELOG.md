@@ -695,3 +695,19 @@ Für jeden Eintrag:
   - deutlich schnellere, häufigere Updates mit stabiler Worker-Performance; stündlicher Full-Run bleibt als Backfill.
 - Rollback-Hinweis:
   - `fast_breaking`-Job entfernen und Fast-Lane-Selection/Overrides rückbauen.
+
+### 2026-03-02 00:41:30 CET | Store (Full-Sector Replacement statt Insert-Block)
+- Änderung:
+  - `app/settings.py`:
+    - neue Parameter `MAX_REPLACEMENTS_PER_SECTOR_PER_RUN` (Default 2) und `MIN_REPLACEMENT_SCORE_DELTA` (Default 0.2).
+  - `worker/store.py`:
+    - wenn ein Sektor bereits voll ist, werden neue stärkere Stories nicht mehr pauschal verworfen.
+    - stattdessen können pro Run bis zu `MAX_REPLACEMENTS_PER_SECTOR_PER_RUN` schwächste bestehende Stories ersetzt werden.
+    - Replacement erfolgt nur, wenn neue Story mindestens `MIN_REPLACEMENT_SCORE_DELTA` besser ist.
+    - neue Drop-/Event-Reasons in Logs: `replaced_low_score_existing`, `replacement_not_stronger`, `replacement_limit_reached`.
+- Grund:
+  - Fast-Lane lief, aber bei vollen Sektoren wurden neue Stories nicht sichtbar (`inserted=0` trotz neuer Kandidaten).
+- Erwarteter Effekt:
+  - Kontinuierliche Erneuerung auch bei vollen Sektoren; Fast-Lane wird im Live-Dashboard sichtbar wirksam.
+- Rollback-Hinweis:
+  - Replacement-Logik in `worker/store.py` entfernen und auf vorheriges Full-Cap-Skip zurücksetzen.

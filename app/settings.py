@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     hot_badge_threshold: float = Field(default=8.0, alias="HOT_BADGE_THRESHOLD")
     max_items_per_sector: int = Field(default=24, alias="MAX_ITEMS_PER_SECTOR")
     max_similar_stories_per_cluster: int = Field(default=2, alias="MAX_SIMILAR_STORIES_PER_CLUSTER")
+    max_replacements_per_sector_per_run: int = Field(default=2, alias="MAX_REPLACEMENTS_PER_SECTOR_PER_RUN")
+    min_replacement_score_delta: float = Field(default=0.2, alias="MIN_REPLACEMENT_SCORE_DELTA")
     max_items_per_domain_per_sector: int = Field(default=3, alias="MAX_ITEMS_PER_DOMAIN_PER_SECTOR")
     min_items_per_sector_target: int = Field(default=6, alias="MIN_ITEMS_PER_SECTOR_TARGET")
     min_items_per_local_subtopic: int = Field(default=6, alias="MIN_ITEMS_PER_LOCAL_SUBTOPIC")
