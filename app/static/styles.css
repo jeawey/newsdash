@@ -16,17 +16,17 @@
 }
 
 :root[data-theme="light"] {
-  --bg-0: #eaf2ff;
-  --bg-1: #f4f8ff;
-  --bg-2: #ffffff;
-  --glass: rgba(255, 255, 255, 0.78);
-  --glass-strong: rgba(255, 255, 255, 0.9);
-  --ink: #17243c;
-  --muted: #5a6f8e;
-  --line: rgba(75, 108, 154, 0.22);
+  --bg-0: #fef7f2;
+  --bg-1: #fdfbf7;
+  --bg-2: #f9f7f4;
+  --glass: rgba(255, 253, 248, 0.82);
+  --glass-strong: rgba(255, 255, 255, 0.92);
+  --ink: #1a1f2e;
+  --muted: #5a6b7d;
+  --line: rgba(98, 128, 164, 0.22);
   --accent: #1fa2d4;
-  --accent-soft: rgba(31, 162, 212, 0.14);
-  --glow: rgba(31, 162, 212, 0.3);
+  --accent-soft: rgba(31, 162, 212, 0.18);
+  --glow: rgba(31, 162, 212, 0.38);
 }
 
 * {
@@ -48,6 +48,23 @@ body {
   color: var(--ink);
   background: linear-gradient(145deg, var(--bg-0), var(--bg-1) 48%, var(--bg-2));
   overflow-x: hidden;
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 15% 25%, rgba(255, 196, 145, 0.18) 0%, transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(139, 198, 255, 0.16) 0%, transparent 45%),
+    radial-gradient(circle at 65% 20%, rgba(255, 185, 205, 0.12) 0%, transparent 40%),
+    linear-gradient(145deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 15% 10%, rgba(244, 180, 160, 0.25), transparent 50%),
+    radial-gradient(circle at 85% 90%, rgba(164, 200, 255, 0.22), transparent 45%),
+    radial-gradient(circle at 95% 15%, rgba(180, 220, 200, 0.18), transparent 40%),
+    radial-gradient(circle at 5% 85%, rgba(255, 200, 180, 0.15), transparent 35%),
+    linear-gradient(145deg, var(--bg-0), var(--bg-1) 50%, var(--bg-2));
 }
 
 .bg-orb {
@@ -84,18 +101,18 @@ body {
 }
 
 :root[data-theme="light"] .orb-a {
-  background: radial-gradient(circle, rgba(48, 176, 232, 0.46) 0%, rgba(48, 176, 232, 0) 72%);
-  opacity: 0.3;
+  background: radial-gradient(circle, rgba(255, 182, 128, 0.52) 0%, rgba(255, 218, 185, 0.28) 40%, rgba(255, 218, 185, 0) 70%);
+  opacity: 0.42;
 }
 
 :root[data-theme="light"] .orb-b {
-  background: radial-gradient(circle, rgba(115, 151, 255, 0.38) 0%, rgba(115, 151, 255, 0) 72%);
-  opacity: 0.26;
+  background: radial-gradient(circle, rgba(139, 198, 255, 0.52) 0%, rgba(167, 216, 255, 0.32) 40%, rgba(167, 216, 255, 0) 72%);
+  opacity: 0.38;
 }
 
 :root[data-theme="light"] .orb-c {
-  background: radial-gradient(circle, rgba(255, 151, 199, 0.35) 0%, rgba(255, 151, 199, 0) 74%);
-  opacity: 0.26;
+  background: radial-gradient(circle, rgba(255, 169, 211, 0.48) 0%, rgba(255, 199, 222, 0.28) 40%, rgba(255, 199, 222, 0) 74%);
+  opacity: 0.38;
 }
 
 .glass-panel {
@@ -107,8 +124,12 @@ body {
 }
 
 :root[data-theme="light"] .glass-panel {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.84), rgba(248, 252, 255, 0.74));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 253, 248, 0.82));
   box-shadow: 0 18px 34px -30px rgba(24, 49, 86, 0.35);
+}
+
+:root[data-theme="light"] .panel::before {
+  opacity: 0.68;
 }
 
 .hero {
@@ -132,6 +153,10 @@ body {
   height: 72%;
   background: radial-gradient(circle, rgba(103, 232, 249, 0.21), transparent 70%);
   pointer-events: none;
+}
+
+:root[data-theme="light"] .hero::after {
+  background: radial-gradient(circle, rgba(255, 196, 145, 0.32), rgba(255, 218, 185, 0.18) 40%, transparent 72%);
 }
 
 .hero-left {
@@ -251,6 +276,11 @@ h1 {
   line-height: 1.2;
 }
 
+:root[data-theme="light"] .stat-pill {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 253, 248, 0.78));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 12px 20px -18px rgba(98, 128, 164, 0.3);
+}
+
 .stat-label {
   color: #8fa3c8;
   font-size: 0.75rem;
@@ -347,8 +377,8 @@ main {
 :root[data-theme="light"] .topic-btn {
   color: #1a3659;
   border-color: rgba(106, 136, 177, 0.42);
-  background: linear-gradient(145deg, rgba(225, 241, 255, 0.9), rgba(247, 252, 255, 0.78));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75), 0 10px 20px -20px rgba(47, 106, 178, 0.35);
+  background: linear-gradient(145deg, rgba(255, 245, 235, 0.92), rgba(247, 252, 255, 0.85));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78), 0 10px 20px -20px rgba(47, 106, 178, 0.35);
 }
 
 .topic-btn:hover {
@@ -367,8 +397,8 @@ main {
 :root[data-theme="light"] .topic-btn.is-active {
   color: #0e2d4d;
   border-color: rgba(63, 134, 221, 0.56);
-  background: linear-gradient(145deg, rgba(119, 186, 255, 0.54), rgba(95, 233, 230, 0.34));
-  box-shadow: 0 0 0 1px rgba(63, 134, 221, 0.3), 0 0 20px -14px rgba(31, 162, 212, 0.45);
+  background: linear-gradient(145deg, rgba(139, 198, 255, 0.62), rgba(255, 185, 205, 0.42));
+  box-shadow: 0 0 0 1px rgba(63, 134, 221, 0.3), 0 0 20px -14px rgba(255, 185, 205, 0.55);
 }
 
 .topic-btn:disabled {
@@ -444,8 +474,8 @@ main {
 :root[data-theme="light"] .show-more-btn {
   color: #0f3459;
   border-color: rgba(83, 129, 188, 0.45);
-  background: linear-gradient(145deg, rgba(138, 198, 255, 0.52), rgba(255, 255, 255, 0.9));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 12px 24px -20px rgba(39, 110, 187, 0.44);
+  background: linear-gradient(145deg, rgba(255, 220, 185, 0.62), rgba(255, 255, 255, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 12px 24px -20px rgba(255, 196, 145, 0.45);
 }
 
 .story-card {
@@ -498,8 +528,8 @@ main {
 
 :root[data-theme="light"] .story-card {
   border-color: rgba(105, 134, 173, 0.28);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(244, 250, 255, 0.72));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68), 0 12px 24px -22px rgba(27, 53, 93, 0.35);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(252, 250, 247, 0.85));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 12px 24px -22px rgba(27, 53, 93, 0.35);
 }
 
 .story-card:hover {
@@ -855,9 +885,10 @@ main {
 
 :root[data-theme="light"] .relevance-legend {
   background:
-    radial-gradient(circle at 8% 0%, rgba(104, 220, 242, 0.18), transparent 40%),
-    radial-gradient(circle at 96% 100%, rgba(122, 167, 255, 0.16), transparent 42%),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.86), rgba(247, 252, 255, 0.74));
+    radial-gradient(circle at 8% 0%, rgba(255, 196, 145, 0.24) 0%, transparent 40%),
+    radial-gradient(circle at 96% 100%, rgba(139, 198, 255, 0.22) 0%, transparent 42%),
+    radial-gradient(circle at 50% 80%, rgba(255, 185, 205, 0.14) 0%, transparent 45%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 253, 248, 0.82));
 }
 
 :root[data-theme="light"] .relevance-legend .panel-head h2 {
@@ -870,8 +901,8 @@ main {
 
 :root[data-theme="light"] .legend-formula {
   border-color: rgba(118, 156, 205, 0.34);
-  background: linear-gradient(145deg, rgba(228, 243, 255, 0.82), rgba(255, 255, 255, 0.9));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 20px 36px -30px rgba(63, 112, 177, 0.45);
+  background: linear-gradient(145deg, rgba(255, 245, 235, 0.88), rgba(255, 255, 255, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 20px 36px -30px rgba(63, 112, 177, 0.45);
 }
 
 :root[data-theme="light"] .legend-formula p {
@@ -898,7 +929,8 @@ main {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
     inset 0 -20px 24px -24px rgba(40, 77, 122, 0.28),
-    0 14px 26px -24px rgba(68, 124, 196, 0.38);
+    0 14px 26px -24px rgba(68, 124, 196, 0.38),
+    0 0 16px -8px color-mix(in srgb, var(--step-glow), transparent 50%);
 }
 
 :root[data-theme="light"] .severity-step::before {
