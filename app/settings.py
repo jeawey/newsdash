@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     min_social_mentions: int = Field(default=3, alias="MIN_SOCIAL_MENTIONS")
     normal_story_window_hours: int = Field(default=24, alias="NORMAL_STORY_WINDOW_HOURS")
     hot_story_window_hours: int = Field(default=48, alias="HOT_STORY_WINDOW_HOURS")
+    snapshot_max_story_age_hours: int = Field(default=72, alias="SNAPSHOT_MAX_STORY_AGE_HOURS")
     max_story_age_hours: int = Field(default=48, alias="MAX_STORY_AGE_HOURS")
     run_ingestion_on_startup: bool = Field(default=False, alias="RUN_INGESTION_ON_STARTUP")
     hard_relevance_gate_enabled: bool = Field(default=True, alias="HARD_RELEVANCE_GATE_ENABLED")

@@ -711,3 +711,17 @@ Für jeden Eintrag:
   - Kontinuierliche Erneuerung auch bei vollen Sektoren; Fast-Lane wird im Live-Dashboard sichtbar wirksam.
 - Rollback-Hinweis:
   - Replacement-Logik in `worker/store.py` entfernen und auf vorheriges Full-Cap-Skip zurücksetzen.
+
+### 2026-03-02 00:58:10 CET | Store Freshness Guard (Snapshot-Published-Age Cutoff)
+- Änderung:
+  - `app/settings.py`:
+    - neue Konfiguration `SNAPSHOT_MAX_STORY_AGE_HOURS` (Default `72`).
+  - `worker/store.py`:
+    - vor Persistierung werden für den aktuellen Snapshot alle Stories entfernt, deren `published_at` älter als der Cutoff ist.
+    - neues Log: `Store freshness cleanup: removed_old_snapshot_rows=...`.
+- Grund:
+  - Verhindert, dass sehr alte Beiträge (z. B. Januar/Februar) im heutigen Dashboard hängen bleiben, obwohl neue Runs laufen.
+- Erwarteter Effekt:
+  - Dashboard zeigt überwiegend tatsächlich aktuelle Artikel; alte Recycled-Feed-Beiträge werden aus dem Tages-Snapshot entfernt.
+- Rollback-Hinweis:
+  - Freshness-Cleanup-Block in `worker/store.py` entfernen und `SNAPSHOT_MAX_STORY_AGE_HOURS` zurücknehmen.

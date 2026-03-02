@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import re
 
@@ -432,6 +432,23 @@ def persist_scored_stories(db: Session, stories: list[ScoredStory], run_type: st
     settings = get_settings()
     tz = pytz.timezone(settings.timezone)
     snapshot_date = datetime.now(tz).date()
+    snapshot_cutoff = datetime.now(pytz.utc) - timedelta(hours=max(1, settings.snapshot_max_story_age_hours))
+
+    # Keep today's snapshot fresh: remove very old published stories even if they
+    # are re-fetched by feeds.
+    removed_old = db.execute(
+        delete(Story).where(
+            Story.snapshot_date == snapshot_date,
+            Story.published_at < snapshot_cutoff,
+        )
+    ).rowcount or 0
+    if removed_old:
+        logger.warning(
+            "Store freshness cleanup: removed_old_snapshot_rows=%s cutoff=%s",
+            removed_old,
+            snapshot_cutoff.isoformat(),
+        )
+    db.commit()
 
     per_sector: dict[str, list[ScoredStory]] = defaultdict(list)
     for story in stories:
