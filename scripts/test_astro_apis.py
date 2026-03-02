@@ -5,12 +5,14 @@ import httpx
 import feedparser
 
 # API URLs
-NOAA_KP_INDEX = "https://services.swpc.noaa.gov/json/planetary-k-index.json"
-NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation-aurora-now.json"
-NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind.json"
+NOAA_KP_INDEX = "https://services.swpc.noaa.gov/json/planetary-k-index-3-hour.json"
+NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation_aurora_forecast.json"
+NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind-plasma-2-hour.json"
 USGS_EARTHQUAKES = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
 STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/@StefanBurns/videos"
-STEFAN_BURNS_YOUTUBE_RSS = "https://www.youtube.com/feeds/videos.xml?channel_id=UC2Zp0hTbqQ9lI1cP0a0YJgA"
+# Try different YouTube RSS formats
+STEFAN_BURNS_YOUTUBE_RSS = "https://www.youtube.com/feeds/videos.xml?channel_id=UCqZc6yQrUZ5l9a9l5l0l0l0l0"
+STEFAN_BURNS_YOUTUBE_RSS_HANDLE = "https://www.youtube.com/feeds/videos.xml?handle=@StefanBurns"
 
 print("=== Testing NOAA KP Index ===")
 try:
@@ -67,9 +69,20 @@ try:
 except Exception as e:
     print(f"Error: {e}")
 
-print("\n=== Testing Stefan Burns YouTube (RSS feed) ===")
+print("\n=== Testing Stefan Burns YouTube (RSS by channel_id) ===")
 try:
     feed = feedparser.parse(STEFAN_BURNS_YOUTUBE_RSS)
+    print(f"Feed title: {feed.get('feed', {}).get('title', 'N/A')}")
+    print(f"Entries: {len(feed.entries)}")
+    if feed.entries:
+        print(f"First video: {feed.entries[0].get('title', 'N/A')}")
+        print(f"Video ID: {feed.entries[0].get('yt_videoid', 'N/A')}")
+except Exception as e:
+    print(f"Error: {e}")
+
+print("\n=== Testing Stefan Burns YouTube (RSS by handle) ===")
+try:
+    feed = feedparser.parse(STEFAN_BURNS_YOUTUBE_RSS_HANDLE)
     print(f"Feed title: {feed.get('feed', {}).get('title', 'N/A')}")
     print(f"Entries: {len(feed.entries)}")
     if feed.entries:

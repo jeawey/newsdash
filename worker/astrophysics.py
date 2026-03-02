@@ -22,11 +22,11 @@ class AstrophysicsData:
     """Fetches and caches astrophysics live data."""
 
     # API URLs
-    NOAA_KP_INDEX = "https://services.swpc.noaa.gov/json/planetary-k-index.json"
-    NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation-aurora-now.json"
-    NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind.json"
+    NOAA_KP_INDEX = "https://services.swpc.noaa.gov/json/planetary-k-index-3-hour.json"
+    NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation_aurora_forecast.json"
+    NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind-plasma-2-hour.json"
     USGS_EARTHQUAKES = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
-    STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?channel_id=UC2Zp0hTbqQ9lI1cP0a0YJgA"
+    STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?handle=@StefanBurns"
 
     # Cache duration (seconds)
     KP_CACHE_TTL = 180  # 3 minutes
