@@ -339,6 +339,7 @@
       const scopeButtons = Array.from(document.querySelectorAll(".scope-btn"));
       const topicButtons = Array.from(document.querySelectorAll(".topic-filter-btn"));
       const topicGroups = Array.from(document.querySelectorAll(".topic-group"));
+      const topicNav = document.querySelector(".topic-nav");
       const topCards = Array.from(document.querySelectorAll(".top-card"));
       const topEmpty = document.querySelector(".top-filter-empty");
       const sectorPanels = Array.from(document.querySelectorAll(".sector-panel"));
@@ -410,6 +411,12 @@
         scopeButtons.forEach((button) => {
           button.classList.toggle("is-active", button.dataset.scope === currentScope);
         });
+
+        // Show/hide topic-nav section (hide when astrophysics is selected)
+        if (topicNav) {
+          const hideTopicNav = currentScope === "astrophysics";
+          topicNav.classList.toggle("is-hidden", hideTopicNav);
+        }
 
         // Show/hide astrophysics section
         if (astrophysicsSection) {
