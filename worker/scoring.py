@@ -8,7 +8,7 @@ from typing import Any
 
 from app.settings import get_settings
 from worker.types import RawStory, ScoredStory
-from worker.utils import fingerprint_title
+from worker.utils import fingerprint_title, jaccard_similarity
 
 logger = logging.getLogger(__name__)
 
@@ -675,15 +675,6 @@ def _semantic_tokens(story: RawStory) -> set[str]:
     return {token for token in tokens if token not in _SEMANTIC_STOPWORDS and not token.isdigit()}
 
 
-def _jaccard_similarity(left: set[str], right: set[str]) -> float:
-    if not left or not right:
-        return 0.0
-    union = left | right
-    if not union:
-        return 0.0
-    return len(left & right) / len(union)
-
-
 def _percentile(sorted_values: list[float], value: float) -> float:
     if not sorted_values:
         return 0.5
@@ -877,7 +868,7 @@ def score_stories(raw_stories: list[RawStory], trusted_domains: dict[str, float]
         peer_indices = [i for i in sector_peer_order[sector] if i != idx][:20]
         best_similarity = 0.0
         for peer_idx in peer_indices:
-            similarity = _jaccard_similarity(tokens, candidates[peer_idx]["semantic_tokens"])
+            similarity = jaccard_similarity(tokens, candidates[peer_idx]["semantic_tokens"])
             if similarity > best_similarity:
                 best_similarity = similarity
         coherence_score = 0.35 if not peer_indices else min(1.0, best_similarity * 2.2)

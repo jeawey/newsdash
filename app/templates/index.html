@@ -8,18 +8,26 @@
     {% set latest_ids = latest_story_ids|default([]) %}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Constructive News</title>
+    <title>Constructive News — Kuratiertes Nachrichten-Dashboard</title>
+    <meta name="description" content="Kuratiertes Nachrichten-Dashboard mit Echtzeit-Scoring: AI, Crypto, Biotech, Sustainability, Cannabis, Politik und mehr — priorisiert nach Relevanz und Aktualität." />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://constructive-news.com/" />
+    <link rel="icon" href="{{ assets }}/logo.svg" type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Constructive News — Kuratiertes Nachrichten-Dashboard" />
+    <meta property="og:description" content="Echtzeit-Nachrichten priorisiert nach Relevanz: AI, Crypto, Biotech, Sustainability, Politik und mehr." />
+    <meta property="og:url" content="https://constructive-news.com/" />
+    <meta property="og:image" content="https://constructive-news.com/static/logo.svg" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:site_name" content="Constructive News" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Constructive News — Kuratiertes Nachrichten-Dashboard" />
+    <meta name="twitter:description" content="Echtzeit-Nachrichten priorisiert nach Relevanz: AI, Crypto, Biotech, Sustainability, Politik und mehr." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
     />
     <link rel="stylesheet" href="{{ assets }}/styles.css" />
   </head>
@@ -30,7 +38,7 @@
 
     <header class="hero glass-panel">
       <div class="hero-left">
-        <img src="{{ assets }}/logo.svg" alt="Constructive Microbes Logo" class="logo" />
+        <img src="{{ assets }}/logo.svg" alt="Constructive News Logo" class="logo" />
         <div>
           <h1>Constructive News</h1>
           <p class="subtitle">Stichtag: {{ snapshot_date }} · Nur aktuelle Meldungen</p>
@@ -38,7 +46,8 @@
       </div>
       <div class="hero-right">
         <button class="theme-toggle" id="themeToggle" type="button" aria-pressed="false" aria-label="Zum Light Mode wechseln">
-          <i class="fa-solid fa-sun theme-toggle-icon" aria-hidden="true"></i>
+          <svg class="theme-toggle-icon theme-icon-sun" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="theme-toggle-icon theme-icon-moon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
           <span class="sr-only">Theme wechseln</span>
         </button>
         <div class="stat-pill">
@@ -210,6 +219,35 @@
       </section>
     </main>
 
+    <footer class="site-footer glass-panel">
+      <div class="footer-inner">
+        <div class="footer-col">
+          <strong>Constructive News</strong>
+          <p>Ein Projekt von Constructive Microbes S.L.</p>
+        </div>
+        <div class="footer-col">
+          <strong>Impressum</strong>
+          <p>
+            Constructive Microbes S.L.<br />
+            Halim Amour Mohamed<br />
+            Avinguda de ses Palmeres, 99<br />
+            07560 Sa Coma, Illes Balears, Spanien
+          </p>
+        </div>
+        <div class="footer-col">
+          <strong>Kontakt</strong>
+          <p>
+            E-Mail: contact@constructive-systems.com<br />
+            Tel: +34 695 159 966<br />
+            USt-IdNr: ESB22976054
+          </p>
+        </div>
+        <div class="footer-col">
+          <p>Inhaltlich verantwortlich gem. &sect; 55 Abs. 2 RStV: Halim Amour Mohamed</p>
+        </div>
+      </div>
+    </footer>
+
     <script>
       const themeToggle = document.getElementById("themeToggle");
       const scopeButtons = Array.from(document.querySelectorAll(".scope-btn"));
@@ -241,9 +279,11 @@
 
         if (!themeToggle) return;
         const isLight = normalized === "light";
-        const iconClass = isLight ? "fa-solid fa-moon theme-toggle-icon" : "fa-solid fa-sun theme-toggle-icon";
         const label = isLight ? "Zum Dark Mode wechseln" : "Zum Light Mode wechseln";
-        themeToggle.innerHTML = `<i class="${iconClass}" aria-hidden="true"></i><span class="sr-only">${label}</span>`;
+        const sunIcon = themeToggle.querySelector(".theme-icon-sun");
+        const moonIcon = themeToggle.querySelector(".theme-icon-moon");
+        if (sunIcon) sunIcon.style.display = isLight ? "none" : "block";
+        if (moonIcon) moonIcon.style.display = isLight ? "block" : "none";
         themeToggle.setAttribute("aria-pressed", String(isLight));
         themeToggle.setAttribute("aria-label", label);
       }
@@ -483,12 +523,42 @@
       initThemeToggle();
       decorateStories();
 
+      let lastStoryCount = {{ top_stories | length }} + {{ sectors.values() | map('length') | sum }};
       const AUTO_REFRESH_MS = 5 * 60 * 1000;
-      setInterval(() => {
-        if (document.visibilityState === "visible") {
-          window.location.reload();
-        }
-      }, AUTO_REFRESH_MS);
+
+      function createUpdateBanner() {
+        const banner = document.createElement("div");
+        banner.id = "update-banner";
+        banner.className = "update-banner is-hidden";
+        banner.innerHTML = `
+          <span>Neue Nachrichten verfügbar</span>
+          <button type="button" onclick="window.location.reload()">Jetzt laden</button>
+          <button type="button" class="dismiss-btn" aria-label="Schließen">&times;</button>
+        `;
+        banner.querySelector(".dismiss-btn").addEventListener("click", () => {
+          banner.classList.add("is-hidden");
+        });
+        document.body.prepend(banner);
+        return banner;
+      }
+
+      const updateBanner = createUpdateBanner();
+
+      async function checkForUpdates() {
+        if (document.visibilityState !== "visible") return;
+        try {
+          const resp = await fetch("/api/stories");
+          if (!resp.ok) return;
+          const data = await resp.json();
+          const totalStories = (data.top_stories?.length || 0) +
+            Object.values(data.sectors || {}).reduce((sum, arr) => sum + arr.length, 0);
+          if (totalStories !== lastStoryCount) {
+            updateBanner.classList.remove("is-hidden");
+          }
+        } catch (_) {}
+      }
+
+      setInterval(checkForUpdates, AUTO_REFRESH_MS);
     </script>
   </body>
 </html>

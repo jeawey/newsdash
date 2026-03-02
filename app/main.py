@@ -1,3 +1,5 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
 from functools import lru_cache
 import re
@@ -5,9 +7,10 @@ from typing import Optional
 
 import pytz
 from fastapi import Depends, FastAPI, Query, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import Session
 
@@ -20,7 +23,26 @@ from app.settings import get_settings
 from worker.config import load_source_config
 from worker.utils import strip_html
 
-app = FastAPI(title="Constructive News")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(title="Constructive News", lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
 templates = Jinja2Templates(directory="app/templates")
 settings = get_settings()
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -180,14 +202,37 @@ def _source_config_views() -> dict[str, object]:
     }
 
 
-@app.on_event("startup")
-def create_schema() -> None:
-    Base.metadata.create_all(bind=engine)
-
-
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+_ROBOTS_TXT = (
+    "User-agent: *\n"
+    "Allow: /\n"
+    "Sitemap: https://constructive-news.com/sitemap.xml\n"
+)
+
+_SITEMAP_XML = (
+    '<?xml version="1.0" encoding="UTF-8"?>\n'
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    "  <url>\n"
+    "    <loc>https://constructive-news.com/</loc>\n"
+    "    <changefreq>hourly</changefreq>\n"
+    "    <priority>1.0</priority>\n"
+    "  </url>\n"
+    "</urlset>\n"
+)
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+def robots_txt() -> str:
+    return _ROBOTS_TXT
+
+
+@app.get("/sitemap.xml", response_class=PlainTextResponse)
+def sitemap_xml() -> PlainTextResponse:
+    return PlainTextResponse(content=_SITEMAP_XML, media_type="application/xml")
 
 
 @app.get("/api/job-runs")
