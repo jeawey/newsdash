@@ -26,7 +26,7 @@ class AstrophysicsData:
     NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation-aurora-now.json"
     NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind.json"
     USGS_EARTHQUAKES = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
-    STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/@StefanBurns/videos"
+    STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?channel_id=UC2Zp0hTbqQ9lI1cP0a0YJgA"
 
     # Cache duration (seconds)
     KP_CACHE_TTL = 180  # 3 minutes
@@ -39,7 +39,7 @@ class AstrophysicsData:
         self._kp_cache: tuple[int, Any] = (0, None)
         self._aurora_cache: tuple[int, Any] = (0, None)
         self._solar_cache: tuple[int, Any] = (0, None)
-        _quake_cache: tuple[int, Any] = (0, None)
+        self._quake_cache: tuple[int, Any] = (0, None)
         self._videos_cache: tuple[int, Any] = (0, None)
 
     def _is_cache_valid(self, cache_time: int, ttl: int) -> bool:
