@@ -52,19 +52,12 @@ body {
 
 :root[data-theme="light"] body {
   background:
-    radial-gradient(circle at 15% 25%, rgba(255, 196, 145, 0.18) 0%, transparent 50%),
-    radial-gradient(circle at 85% 75%, rgba(139, 198, 255, 0.16) 0%, transparent 45%),
-    radial-gradient(circle at 65% 20%, rgba(255, 185, 205, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 12% 18%, rgba(32, 201, 151, 0.32) 0%, transparent 45%),
+    radial-gradient(circle at 88% 82%, rgba(30, 80, 162, 0.28) 0%, transparent 50%),
+    radial-gradient(circle at 72% 12%, rgba(45, 120, 200, 0.22) 0%, transparent 40%),
+    radial-gradient(circle at 18% 78%, rgba(32, 201, 151, 0.18) 0%, transparent 38%),
+    radial-gradient(circle at 95% 30%, rgba(60, 140, 220, 0.15) 0%, transparent 35%),
     linear-gradient(145deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2));
-}
-
-:root[data-theme="light"] body {
-  background:
-    radial-gradient(circle at 15% 10%, rgba(244, 180, 160, 0.25), transparent 50%),
-    radial-gradient(circle at 85% 90%, rgba(164, 200, 255, 0.22), transparent 45%),
-    radial-gradient(circle at 95% 15%, rgba(180, 220, 200, 0.18), transparent 40%),
-    radial-gradient(circle at 5% 85%, rgba(255, 200, 180, 0.15), transparent 35%),
-    linear-gradient(145deg, var(--bg-0), var(--bg-1) 50%, var(--bg-2));
 }
 
 .bg-orb {
@@ -101,18 +94,18 @@ body {
 }
 
 :root[data-theme="light"] .orb-a {
-  background: radial-gradient(circle, rgba(255, 182, 128, 0.52) 0%, rgba(255, 218, 185, 0.28) 40%, rgba(255, 218, 185, 0) 70%);
-  opacity: 0.42;
+  background: radial-gradient(circle, rgba(32, 201, 151, 0.62) 0%, rgba(32, 201, 151, 0.38) 40%, rgba(32, 201, 151, 0) 75%);
+  opacity: 0.52;
 }
 
 :root[data-theme="light"] .orb-b {
-  background: radial-gradient(circle, rgba(139, 198, 255, 0.52) 0%, rgba(167, 216, 255, 0.32) 40%, rgba(167, 216, 255, 0) 72%);
-  opacity: 0.38;
+  background: radial-gradient(circle, rgba(30, 80, 162, 0.58) 0%, rgba(60, 120, 200, 0.38) 40%, rgba(60, 120, 200, 0) 72%);
+  opacity: 0.48;
 }
 
 :root[data-theme="light"] .orb-c {
-  background: radial-gradient(circle, rgba(255, 169, 211, 0.48) 0%, rgba(255, 199, 222, 0.28) 40%, rgba(255, 199, 222, 0) 74%);
-  opacity: 0.38;
+  background: radial-gradient(circle, rgba(45, 140, 220, 0.52) 0%, rgba(32, 201, 151, 0.28) 40%, rgba(32, 201, 151, 0) 74%);
+  opacity: 0.45;
 }
 
 .glass-panel {
@@ -156,7 +149,7 @@ body {
 }
 
 :root[data-theme="light"] .hero::after {
-  background: radial-gradient(circle, rgba(255, 196, 145, 0.32), rgba(255, 218, 185, 0.18) 40%, transparent 72%);
+  background: radial-gradient(circle, rgba(32, 201, 151, 0.42) 0%, rgba(60, 140, 220, 0.28) 40%, transparent 72%);
 }
 
 .hero-left {
@@ -247,15 +240,15 @@ h1 {
 
 :root[data-theme="light"] .theme-toggle {
   color: #123451;
-  border-color: rgba(81, 120, 170, 0.42);
+  border-color: rgba(30, 80, 162, 0.48);
   background:
-    radial-gradient(circle at 28% 28%, rgba(255, 246, 171, 0.9), rgba(255, 246, 171, 0.3) 28%, rgba(255, 246, 171, 0) 62%),
-    linear-gradient(145deg, rgba(130, 194, 255, 0.55), rgba(255, 255, 255, 0.92));
-  box-shadow: 0 10px 26px -20px rgba(46, 113, 194, 0.55);
+    radial-gradient(circle at 28% 28%, rgba(32, 201, 151, 0.8), rgba(32, 201, 151, 0.3) 28%, rgba(32, 201, 151, 0) 62%),
+    linear-gradient(145deg, rgba(60, 140, 220, 0.58), rgba(255, 255, 255, 0.92));
+  box-shadow: 0 10px 26px -20px rgba(32, 201, 151, 0.55);
 }
 
 :root[data-theme="light"] .theme-toggle:hover {
-  box-shadow: 0 0 0 1px rgba(76, 146, 229, 0.35), 0 14px 28px -20px rgba(46, 113, 194, 0.62);
+  box-shadow: 0 0 0 1px rgba(32, 201, 151, 0.45), 0 14px 28px -20px rgba(60, 140, 220, 0.62);
 }
 
 :root[data-theme="light"] .theme-toggle .theme-toggle-icon {
@@ -278,7 +271,7 @@ h1 {
 
 :root[data-theme="light"] .stat-pill {
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(255, 253, 248, 0.78));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 12px 20px -18px rgba(98, 128, 164, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.76), 0 12px 20px -18px rgba(32, 201, 151, 0.32);
 }
 
 .stat-label {
@@ -396,9 +389,9 @@ main {
 
 :root[data-theme="light"] .topic-btn.is-active {
   color: #0e2d4d;
-  border-color: rgba(63, 134, 221, 0.56);
-  background: linear-gradient(145deg, rgba(139, 198, 255, 0.62), rgba(255, 185, 205, 0.42));
-  box-shadow: 0 0 0 1px rgba(63, 134, 221, 0.3), 0 0 20px -14px rgba(255, 185, 205, 0.55);
+  border-color: rgba(30, 80, 162, 0.56);
+  background: linear-gradient(145deg, rgba(32, 201, 151, 0.62), rgba(60, 140, 220, 0.48));
+  box-shadow: 0 0 0 1px rgba(30, 80, 162, 0.3), 0 0 20px -14px rgba(32, 201, 151, 0.55);
 }
 
 .topic-btn:disabled {
@@ -474,8 +467,8 @@ main {
 :root[data-theme="light"] .show-more-btn {
   color: #0f3459;
   border-color: rgba(83, 129, 188, 0.45);
-  background: linear-gradient(145deg, rgba(255, 220, 185, 0.62), rgba(255, 255, 255, 0.9));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 12px 24px -20px rgba(255, 196, 145, 0.45);
+  background: linear-gradient(145deg, rgba(32, 201, 151, 0.58), rgba(255, 255, 255, 0.9));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.74), 0 12px 24px -20px rgba(32, 201, 151, 0.48);
 }
 
 .story-card {
@@ -561,6 +554,8 @@ main {
 
 :root[data-theme="light"] .chip {
   color: #12456b;
+  border-color: rgba(30, 80, 162, 0.52);
+  background: color-mix(in srgb, var(--subtopic-accent, var(--sector-accent)), transparent 78%);
 }
 
 .latest-tag {
@@ -885,9 +880,9 @@ main {
 
 :root[data-theme="light"] .relevance-legend {
   background:
-    radial-gradient(circle at 8% 0%, rgba(255, 196, 145, 0.24) 0%, transparent 40%),
-    radial-gradient(circle at 96% 100%, rgba(139, 198, 255, 0.22) 0%, transparent 42%),
-    radial-gradient(circle at 50% 80%, rgba(255, 185, 205, 0.14) 0%, transparent 45%),
+    radial-gradient(circle at 8% 0%, rgba(32, 201, 151, 0.32) 0%, transparent 40%),
+    radial-gradient(circle at 96% 100%, rgba(30, 80, 162, 0.28) 0%, transparent 42%),
+    radial-gradient(circle at 50% 80%, rgba(60, 140, 220, 0.18) 0%, transparent 45%),
     linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 253, 248, 0.82));
 }
 
