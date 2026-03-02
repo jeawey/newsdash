@@ -11,7 +11,7 @@ from app.models import JobRun, Story
 from app.settings import get_settings
 from worker.translate import translate_to_german
 from worker.types import ScoredStory
-from worker.utils import canonicalize_url, fingerprint_title_loose, strip_html
+from worker.utils import canonicalize_url, fingerprint_title_loose, jaccard_similarity, strip_html
 
 logger = logging.getLogger(__name__)
 
@@ -368,15 +368,6 @@ def _content_tokens(title: str, summary: str) -> set[str]:
     return {token for token in tokens if token not in _CONTENT_CLUSTER_STOPWORDS}
 
 
-def _jaccard_similarity(left: set[str], right: set[str]) -> float:
-    if not left or not right:
-        return 0.0
-    union = left | right
-    if not union:
-        return 0.0
-    return len(left & right) / len(union)
-
-
 def _similarity_threshold_for_sector(sector: str) -> float:
     return _SECTOR_CONTENT_SIMILARITY_THRESHOLD.get(
         sector,
@@ -399,7 +390,7 @@ def _find_similar_cluster(
     best_similarity = 0.0
     for idx, cluster in enumerate(clusters):
         cluster_tokens = cluster["tokens"]  # type: ignore[index]
-        similarity = _jaccard_similarity(tokens, cluster_tokens)
+        similarity = jaccard_similarity(tokens, cluster_tokens)
         if similarity >= threshold and similarity > best_similarity:
             best_similarity = similarity
             best_idx = idx

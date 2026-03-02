@@ -56,6 +56,15 @@ def fingerprint_title_loose(title: str) -> str:
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
 
 
+def jaccard_similarity(left: set[str], right: set[str]) -> float:
+    if not left or not right:
+        return 0.0
+    union = left | right
+    if not union:
+        return 0.0
+    return len(left & right) / len(union)
+
+
 def canonicalize_url(url: str) -> str:
     parsed = urlparse(url.strip())
     path = re.sub(r"/+", "/", parsed.path).rstrip("/")
