@@ -194,7 +194,7 @@ def _source_config_views() -> dict[str, object]:
         if query.subtopic not in bucket:
             bucket.append(query.subtopic)
 
-    room_only = {"Kenya", "Hamburg", "Mallorca"}
+    room_only = {"Kenya", "Hamburg", "Mallorca", "Astrophysik"}
     topic_sectors = [sector for sector in ordered if sector not in room_only]
     return {
         "configured_sectors": ordered,
