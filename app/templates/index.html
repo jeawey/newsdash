@@ -57,13 +57,14 @@
       <section class="scope-nav panel glass-panel">
         <div class="panel-head">
           <h2>Nachrichtenraum</h2>
-          <p>Wechsel zwischen global, Hamburg, Mallorca und Kenya</p>
+          <p>Wechsel zwischen global, Hamburg, Mallorca, Kenya und Astrophysik</p>
         </div>
         <div class="topic-buttons">
           <button class="topic-btn scope-btn is-active" data-scope="global" type="button">Global News</button>
           <button class="topic-btn scope-btn" data-scope="hamburg" type="button">Hamburg</button>
           <button class="topic-btn scope-btn" data-scope="mallorca" type="button">Mallorca</button>
           <button class="topic-btn scope-btn" data-scope="kenya" type="button">Kenya</button>
+          <button class="topic-btn scope-btn" data-scope="astrophysics" type="button">Astrophysik</button>
         </div>
       </section>
 
@@ -341,6 +342,7 @@
       const topCards = Array.from(document.querySelectorAll(".top-card"));
       const topEmpty = document.querySelector(".top-filter-empty");
       const sectorPanels = Array.from(document.querySelectorAll(".sector-panel"));
+      const astrophysicsSection = document.getElementById("astrophysics-section");
       const panelStates = sectorPanels.map((panel) => ({
         panel,
         storyCards: Array.from(panel.querySelectorAll(".sector-story")),
@@ -408,6 +410,30 @@
         scopeButtons.forEach((button) => {
           button.classList.toggle("is-active", button.dataset.scope === currentScope);
         });
+
+        // Show/hide astrophysics section
+        if (astrophysicsSection) {
+          const showAstrophysics = currentScope === "astrophysics";
+          astrophysicsSection.classList.toggle("is-hidden", !showAstrophysics);
+          if (showAstrophysics) {
+            astrophysicsSection.classList.add("is-visible");
+          } else {
+            astrophysicsSection.classList.remove("is-visible");
+          }
+        }
+
+        // Hide all news panels when astrophysics is selected
+        const isAstrophysicsScope = currentScope === "astrophysics";
+        if (isAstrophysicsScope) {
+          topCards.forEach((card) => {
+            card.classList.add("is-hidden");
+          });
+          if (topEmpty) topEmpty.classList.add("is-hidden");
+          sectorPanels.forEach((panel) => {
+            panel.classList.add("is-hidden");
+          });
+          return;
+        }
 
         topicGroups.forEach((group) => {
           group.classList.toggle("is-active", group.dataset.topicScope === currentScope);
@@ -565,7 +591,7 @@
       function initRevealAnimations() {
         const revealTargets = Array.from(
           document.querySelectorAll(
-            ".hero, .scope-nav, .topic-nav, .top-section, .sector-panel, .relevance-legend"
+            ".hero, .scope-nav, .topic-nav, .top-section, .sector-panel, .astrophysics-section, .relevance-legend"
           )
         );
 
