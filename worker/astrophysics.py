@@ -21,10 +21,11 @@ logger = logging.getLogger(__name__)
 class AstrophysicsData:
     """Fetches and caches astrophysics live data."""
 
-    # API URLs
-    NOAA_KP_INDEX = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
-    NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation-aurora-now.json"  # Deprecated, may not work
-    NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/products/solar-wind/plasma-2-hour.json"
+    # API URLs - Confirmed working NOAA endpoints
+    NOAA_KP_INDEX = "https://services.swpc.noaa.gov/json/planetary_k_index_1m.json"
+    NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+    NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
+    NOAA_SOLAR_MAG = "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json"
     USGS_EARTHQUAKES = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
     STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?channel_id=UCGutiiMqD6jEy6J9hNdNniA"
 
@@ -57,35 +58,32 @@ class AstrophysicsData:
             response.raise_for_status()
             data = response.json()
 
-            # New format: list of arrays, first row is header
-            # [['time_tag', 'Kp', 'a_running', 'station_count'], ['2026-02-23 00:00:00.000', '3.67', '22', '8']]
-            if isinstance(data, list) and len(data) > 1:
-                latest_row = data[1]  # Skip header row
-                if isinstance(latest_row, list) and len(latest_row) >= 2:
-                    time_tag = latest_row[0]
-                    kp_value_str = latest_row[1]
+            # New NOAA format: list of objects with time_tag, kp_index, estimated_kp, kp
+            # [{'time_tag': '2026-03-02T23:45:00', 'kp_index': 1, 'estimated_kp': 1.33, 'kp': '1P'}, ...]
+            if isinstance(data, list) and len(data) > 0:
+                latest = data[-1]  # Last entry is most recent
 
-                    try:
-                        kp_value = float(kp_value_str)
-                        kp_class = self._classify_kp(int(kp_value))
+                time_tag = latest.get("time_tag")
+                kp_value = latest.get("kp_index", 0)
+                estimated_kp = latest.get("estimated_kp", 0)
+                kp_class = self._classify_kp(int(kp_value))
 
-                        result = {
-                            "kp_index": kp_value,
-                            "kp_value": int(kp_value),
-                            "kp_class": kp_class,
-                            "time_tag": time_tag,
-                            "updated_at": datetime.now().isoformat(),
-                        }
+                result = {
+                    "kp_index": kp_value,
+                    "kp_value": kp_value,
+                    "estimated_kp": estimated_kp,
+                    "kp_class": kp_class,
+                    "time_tag": time_tag,
+                    "updated_at": datetime.now().isoformat(),
+                }
 
-                        self._kp_cache = (datetime.now().timestamp(), result)
-                        return result
-                    except (ValueError, TypeError):
-                        pass
+                self._kp_cache = (datetime.now().timestamp(), result)
+                return result
 
         except Exception as e:
             logger.warning(f"Failed to fetch KP index: {e}")
 
-        return {"kp_index": 0, "kp_value": 0, "kp_class": "green", "time_tag": None, "updated_at": None}
+        return {"kp_index": 0, "kp_value": 0, "estimated_kp": 0, "kp_class": "green", "time_tag": None, "updated_at": None}
 
     def _classify_kp(self, kp: int) -> str:
         """Classify KP index for UI display."""
@@ -109,11 +107,19 @@ class AstrophysicsData:
             response.raise_for_status()
             data = response.json()
 
-            # Calculate aurora visibility score (0-100)
-            visibility_score = 0
-            for location in data[:10]:  # Check first 10 locations
-                vis = location.get("aurora_visibility", 0)
-                visibility_score = max(visibility_score, vis)
+            # New NOAA aurora format: has 'coordinates' field
+            # coordinates: [[lon, lat, aurora], [lon, lat, aurora], ...]
+            # aurora values are 0-12
+            coords = data.get("coordinates", [])
+            locations_count = len(coords)
+
+            # Find maximum aurora visibility (0-12 scale)
+            max_aurora = 0
+            if coords:
+                max_aurora = max([c[2] for c in coords if len(c) > 2])
+
+            # Convert to percentage (0-100) for display
+            visibility_score = int((max_aurora / 12) * 100) if max_aurora > 0 else 0
 
             # Calculate class based on visibility
             aurora_class = self._classify_aurora(visibility_score)
@@ -121,7 +127,10 @@ class AstrophysicsData:
             result = {
                 "visibility_score": visibility_score,
                 "aurora_class": aurora_class,
-                "locations_count": len(data),
+                "max_aurora_level": max_aurora,
+                "locations_count": locations_count,
+                "observation_time": data.get("Observation Time"),
+                "forecast_time": data.get("Forecast Time"),
                 "updated_at": datetime.now().isoformat(),
             }
 
@@ -131,7 +140,7 @@ class AstrophysicsData:
         except Exception as e:
             logger.warning(f"Failed to fetch aurora forecast: {e}")
 
-        return {"visibility_score": 0, "aurora_class": "none", "locations_count": 0, "updated_at": None}
+        return {"visibility_score": 0, "aurora_class": "none", "max_aurora_level": 0, "locations_count": 0, "updated_at": None}
 
     def _classify_aurora(self, score: int) -> str:
         """Classify aurora visibility for UI display."""
@@ -147,56 +156,89 @@ class AstrophysicsData:
             return "very-high"
 
     def get_solar_activity(self) -> dict[str, Any]:
-        """Get solar activity data (sunspots, flares, solar wind)."""
+        """Get solar activity data (sunspots, flares, solar wind, magnetic field)."""
         cache_time, cached_data = self._solar_cache
         if cached_data and self._is_cache_valid(cache_time, self.SOLAR_CACHE_TTL):
             return cached_data
 
         try:
-            # Fetch solar wind data
+            # Fetch solar wind data (speed, density, temperature)
+            wind_speed = None
+            wind_density = None
+            wind_temperature = None
+
             solar_response = httpx.get(self.NOAA_SOLAR_WIND, timeout=10)
             solar_response.raise_for_status()
             solar_data = solar_response.json()
 
-            # Parse solar wind data - handle different API response formats
-            wind_speed = None
-            wind_density = None
-            wind_bz = None
+            # New NOAA rtsw format: list of objects
+            # [{'time_tag': '...', 'proton_speed': 347.5, 'proton_density': 4.78, ...}, ...]
+            if isinstance(solar_data, list) and len(solar_data) > 0:
+                # Find the latest active entry
+                latest = None
+                for entry in reversed(solar_data):
+                    if entry.get("active", False):
+                        latest = entry
+                        break
+                # If no active entry, use the last one
+                if not latest:
+                    latest = solar_data[-1]
 
-            # New NOAA format: list of arrays, first row is header
-            # [['time_tag', 'density', 'speed', 'temperature'], ['2026-03-02 21:04:00.000', '7.73', '313.8', '37939']]
-            if isinstance(solar_data, list) and len(solar_data) > 1:
-                latest_row = solar_data[1]  # Skip header row
-                if isinstance(latest_row, list) and len(latest_row) >= 3:
-                    # Format: [time_tag, density, speed, temperature]
-                    wind_density = latest_row[1]
-                    wind_speed = latest_row[2]
-                    try:
-                        wind_density = float(wind_density)
-                        wind_speed = float(wind_speed)
-                    except (ValueError, TypeError):
-                        pass
-            elif isinstance(solar_data, list) and len(solar_data) > 0:
-                # Try old format: array of dicts
-                latest = solar_data[0]
-                if isinstance(latest, dict):
-                    wind_speed = latest.get("speed") or latest.get("solar_wind_speed")
-                    wind_density = latest.get("density") or latest.get("proton_density")
-                    wind_bz = latest.get("bz") or latest.get("bz_gsm")
-            elif isinstance(solar_data, dict):
-                # Dict format
-                wind_speed = solar_data.get("speed") or solar_data.get("solar_wind_speed")
-                wind_density = solar_data.get("density") or solar_data.get("proton_density")
-                wind_bz = solar_data.get("bz") or solar_data.get("bz_gsm")
+                wind_speed = latest.get("proton_speed")
+                wind_density = latest.get("proton_density")
+                wind_temperature = latest.get("proton_temperature")
+
+            # Fetch magnetic field data (Bz, Bx, By, Bt)
+            bz_gsm = None
+            bt = None
+
+            mag_response = httpx.get(self.NOAA_SOLAR_MAG, timeout=10)
+            mag_response.raise_for_status()
+            mag_data = mag_response.json()
+
+            # New NOAA rtsw mag format: list of objects
+            # [{'time_tag': '...', 'bt': 4.66, 'bz_gsm': -3.89, 'bx_gsm': 2.09, ...}, ...]
+            if isinstance(mag_data, list) and len(mag_data) > 0:
+                # Find the latest active entry
+                latest_mag = None
+                for entry in reversed(mag_data):
+                    if entry.get("active", False):
+                        latest_mag = entry
+                        break
+                # If no active entry, use the last one
+                if not latest_mag:
+                    latest_mag = mag_data[-1]
+
+                bz_gsm = latest_mag.get("bz_gsm")
+                bt = latest_mag.get("bt")
 
             result = {
                 "sunspots": self._get_sunspot_count(),
                 "solar_wind_speed": wind_speed,
                 "solar_wind_density": wind_density,
-                "solar_wind_bz": wind_bz,
+                "solar_wind_temperature": wind_temperature,
+                "solar_wind_bz": bz_gsm,
+                "solar_wind_bt": bt,
                 "latest_flares": self._get_latest_flares(),
                 "updated_at": datetime.now().isoformat(),
             }
+
+            self._solar_cache = (datetime.now().timestamp(), result)
+            return result
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch solar activity: {e}")
+
+        return {
+            "sunspots": 0,
+            "solar_wind_speed": None,
+            "solar_wind_density": None,
+            "solar_wind_temperature": None,
+            "solar_wind_bz": None,
+            "solar_wind_bt": None,
+            "latest_flares": [],
+            "updated_at": None,
+        }
 
             self._solar_cache = (datetime.now().timestamp(), result)
             return result
