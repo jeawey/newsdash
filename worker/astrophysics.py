@@ -26,7 +26,7 @@ class AstrophysicsData:
     NOAA_AURORA = "https://services.swpc.noaa.gov/json/ovation_aurora_forecast.json"
     NOAA_SOLAR_WIND = "https://services.swpc.noaa.gov/json/solar-wind-plasma-2-hour.json"
     USGS_EARTHQUAKES = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson"
-    STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?handle=@StefanBurns"
+    STEFAN_BURNS_YOUTUBE = "https://www.youtube.com/feeds/videos.xml?channel_id=UCGutiiMqD6jEy6J9hNdNniA"
 
     # Cache duration (seconds)
     KP_CACHE_TTL = 180  # 3 minutes
