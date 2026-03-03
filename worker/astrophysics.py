@@ -212,6 +212,12 @@ class AstrophysicsData:
                 bz_gsm = latest_mag.get("bz_gsm")
                 bt = latest_mag.get("bt")
 
+            # Get flares safely
+            try:
+                flares = self._get_latest_flares()
+            except Exception:
+                flares = []
+
             result = {
                 "sunspots": self._get_sunspot_count(),
                 "solar_wind_speed": wind_speed,
@@ -219,7 +225,7 @@ class AstrophysicsData:
                 "solar_wind_temperature": wind_temperature,
                 "solar_wind_bz": bz_gsm,
                 "solar_wind_bt": bt,
-                "latest_flares": self._get_latest_flares(),
+                "latest_flares": flares,
                 "updated_at": datetime.now().isoformat(),
             }
 
@@ -227,7 +233,8 @@ class AstrophysicsData:
             return result
 
         except Exception as e:
-            logger.warning(f"Failed to fetch solar activity: {e}")
+            import traceback
+            logger.warning(f"Failed to fetch solar activity: {e}\n{traceback.format_exc()}")
 
         return {
             "sunspots": 0,
