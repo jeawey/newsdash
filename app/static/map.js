@@ -525,21 +525,22 @@
   function addVolcanoLayers() {
     if (!map || !filters.showVolcanoes) return;
 
-    // Only add if layer doesn't exist
-    if (map.getLayer('volcanoes')) return;
+    // Only add if layers don't exist
+    if (map.getLayer('volcanoes-glow')) return;
     if (!map.getSource('volcanoes')) return;
 
-    // Use simple circle markers instead of custom icons (more reliable)
+    // Glow layer (circles underneath for glow effect)
     map.addLayer({
-      id: 'volcanoes',
+      id: 'volcanoes-glow',
       type: 'circle',
       source: 'volcanoes',
       paint: {
         'circle-radius': [
           'case',
-          ['==', ['get', 'status'], 'erupting'], 10,
-          ['==', ['get', 'status'], 'unrest'], 8,
-          6
+          ['==', ['get', 'status'], 'erupting'], 18,
+          ['==', ['get', 'status'], 'unrest'], 14,
+          ['==', ['get', 'status'], 'active'], 12,
+          10
         ],
         'circle-color': [
           'case',
@@ -548,9 +549,31 @@
           ['==', ['get', 'status'], 'active'], VOLCANO_COLORS.active,
           VOLCANO_COLORS.dormant
         ],
-        'circle-opacity': 0.9,
-        'circle-stroke-width': 2,
-        'circle-stroke-color': '#ffffff',
+        'circle-opacity': 0.3,
+        'circle-blur': 0.5,
+      },
+    });
+
+    // Volcano icon layer (using built-in volcano icon)
+    // Note: icon-color only works for SDF icons, so we use a colored circle below for the glow
+    // and display the volcano icon on top in white
+    map.addLayer({
+      id: 'volcanoes',
+      type: 'symbol',
+      source: 'volcanoes',
+      layout: {
+        'icon-image': 'volcano',
+        'icon-size': [
+          'case',
+          ['==', ['get', 'status'], 'erupting'], 1.0,
+          ['==', ['get', 'status'], 'unrest'], 0.85,
+          ['==', ['get', 'status'], 'active'], 0.75,
+          0.65
+        ],
+        'icon-allow-overlap': true,
+      },
+      paint: {
+        'icon-opacity': 1,
       },
     });
 
@@ -888,7 +911,7 @@
         if (map && filters.showVolcanoes) {
           addVolcanoLayers();
         } else if (map) {
-          const layers = ['volcanoes'];
+          const layers = ['volcanoes', 'volcanoes-glow'];
           layers.forEach(layer => {
             if (map.getLayer(layer)) {
               map.removeLayer(layer);
