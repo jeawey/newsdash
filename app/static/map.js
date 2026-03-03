@@ -236,6 +236,17 @@
       setupMapEvents();
     });
 
+    // Fix for map not filling container on first load
+    // Multiple resize attempts to ensure proper rendering
+    requestAnimationFrame(() => map.resize());
+    setTimeout(() => map.resize(), 100);
+    setTimeout(() => map.resize(), 500);
+
+    // Resize on idle (after all resources loaded)
+    map.on('idle', () => {
+      map.resize();
+    });
+
     // Handle map errors
     map.on('error', (e) => {
       console.error('[Map] Map error:', e.error);
@@ -244,6 +255,8 @@
 
     map.on('style.load', () => {
       console.log('[Map] Style loaded');
+      // Fix: Resize after style is fully loaded
+      setTimeout(() => map.resize(), 50);
     });
 
     // Cleanup on page unload
@@ -356,6 +369,8 @@
       addEarthquakeLayers();
       addVolcanoLayers();
       console.log('renderMapData completed successfully');
+      // Fix: Ensure map fills container after data is rendered
+      setTimeout(() => map.resize(), 100);
     } catch (error) {
       console.error('renderMapData error:', error);
       throw error;
