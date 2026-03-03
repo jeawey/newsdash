@@ -240,21 +240,6 @@ class AstrophysicsData:
             "updated_at": None,
         }
 
-            self._solar_cache = (datetime.now().timestamp(), result)
-            return result
-
-        except Exception as e:
-            logger.warning(f"Failed to fetch solar activity: {e}")
-
-        return {
-            "sunspots": 0,
-            "solar_wind_speed": None,
-            "solar_wind_density": None,
-            "solar_wind_bz": None,
-            "latest_flares": [],
-            "updated_at": None,
-        }
-
     def _get_sunspot_count(self) -> int:
         """Get current sunspot number (simulated - would need to scrape NASA)."""
         # In production, this would scrape from:
