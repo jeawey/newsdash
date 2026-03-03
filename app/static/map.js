@@ -58,6 +58,37 @@
   };
 
   /**
+   * Create triangle SVG images for volcano markers
+   */
+  function createVolcanoImages() {
+    const sizes = { erupting: 24, unrest: 20, active: 16, dormant: 14 };
+
+    Object.entries(VOLCANO_COLORS).forEach(([status, color]) => {
+      const size = sizes[status];
+      const halfSize = size / 2;
+
+      // Create triangle SVG as data URI
+      const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+          <polygon
+            points="${halfSize},2 ${size - 2},${size - 2} 2,${size - 2}"
+            fill="${color}"
+            stroke="#ffffff"
+            stroke-width="1"
+          />
+        </svg>
+      `;
+      const img = new Image(size, size);
+      img.onload = () => {
+        if (map && !map.hasImage(`volcano-${status}`)) {
+          map.addImage(`volcano-${status}`, img, { pixelRatio: 2 });
+        }
+      };
+      img.src = 'data:image/svg+xml;base64,' + btoa(svg.trim());
+    });
+  }
+
+  /**
    * Sanitize HTML to prevent XSS attacks
    * @param {string} str - String to sanitize
    * @returns {string} - Sanitized string safe for HTML insertion
@@ -232,6 +263,7 @@
     map.on('load', () => {
       console.log('[Map] Map load event fired');
       enableGlobe();
+      createVolcanoImages(); // Create custom volcano icons
       loadMapData();
       setupMapEvents();
     });
@@ -529,18 +561,18 @@
     if (map.getLayer('volcanoes-glow')) return;
     if (!map.getSource('volcanoes')) return;
 
-    // Glow layer (circles underneath for glow effect)
+    // Outer glow (larger, more diffuse)
     map.addLayer({
-      id: 'volcanoes-glow',
+      id: 'volcanoes-glow-outer',
       type: 'circle',
       source: 'volcanoes',
       paint: {
         'circle-radius': [
           'case',
-          ['==', ['get', 'status'], 'erupting'], 18,
-          ['==', ['get', 'status'], 'unrest'], 14,
-          ['==', ['get', 'status'], 'active'], 12,
-          10
+          ['==', ['get', 'status'], 'erupting'], 24,
+          ['==', ['get', 'status'], 'unrest'], 20,
+          ['==', ['get', 'status'], 'active'], 16,
+          12
         ],
         'circle-color': [
           'case',
@@ -549,35 +581,86 @@
           ['==', ['get', 'status'], 'active'], VOLCANO_COLORS.active,
           VOLCANO_COLORS.dormant
         ],
-        'circle-opacity': 0.3,
-        'circle-blur': 0.5,
+        'circle-opacity': [
+          'case',
+          ['==', ['get', 'status'], 'erupting'], 0.25,
+          ['==', ['get', 'status'], 'unrest'], 0.2,
+          ['==', ['get', 'status'], 'active'], 0.15,
+          0.1
+        ],
+        'circle-blur': 0.8,
+        'circle-pitch-scale': 'map',
       },
     });
 
-    // Volcano icon layer (using built-in volcano icon)
-    // Note: icon-color only works for SDF icons, so we use a colored circle below for the glow
-    // and display the volcano icon on top in white
+    // Inner glow (brighter, smaller)
+    map.addLayer({
+      id: 'volcanoes-glow',
+      type: 'circle',
+      source: 'volcanoes',
+      paint: {
+        'circle-radius': [
+          'case',
+          ['==', ['get', 'status'], 'erupting'], 12,
+          ['==', ['get', 'status'], 'unrest'], 10,
+          ['==', ['get', 'status'], 'active'], 8,
+          6
+        ],
+        'circle-color': [
+          'case',
+          ['==', ['get', 'status'], 'erupting'], VOLCANO_COLORS.erupting,
+          ['==', ['get', 'status'], 'unrest'], VOLCANO_COLORS.unrest,
+          ['==', ['get', 'status'], 'active'], VOLCANO_COLORS.active,
+          VOLCANO_COLORS.dormant
+        ],
+        'circle-opacity': [
+          'case',
+          ['==', ['get', 'status'], 'erupting'], 0.6,
+          ['==', ['get', 'status'], 'unrest'], 0.5,
+          ['==', ['get', 'status'], 'active'], 0.4,
+          0.3
+        ],
+        'circle-blur': 0.3,
+      },
+    });
+
+    // Volcano triangle icons - use icon-image based on status
     map.addLayer({
       id: 'volcanoes',
       type: 'symbol',
       source: 'volcanoes',
       layout: {
-        'icon-image': 'volcano',
+        'icon-image': [
+          'case',
+          ['==', ['get', 'status'], 'erupting'], 'volcano-erupting',
+          ['==', ['get', 'status'], 'unrest'], 'volcano-unrest',
+          ['==', ['get', 'status'], 'active'], 'volcano-active',
+          'volcano-dormant'
+        ],
         'icon-size': [
           'case',
-          ['==', ['get', 'status'], 'erupting'], 1.0,
-          ['==', ['get', 'status'], 'unrest'], 0.85,
-          ['==', ['get', 'status'], 'active'], 0.75,
-          0.65
+          ['==', ['get', 'status'], 'erupting'], 1.2,
+          ['==', ['get', 'status'], 'unrest'], 1.0,
+          ['==', ['get', 'status'], 'active'], 0.9,
+          0.8
         ],
         'icon-allow-overlap': true,
+        'icon-anchor': 'bottom',
+        'icon-offset': [0, 0],
       },
       paint: {
         'icon-opacity': 1,
       },
     });
 
+    // Click handlers
     map.on('click', 'volcanoes', (e) => {
+      if (!e.features || !e.features[0]) return;
+      const properties = e.features[0].properties;
+      showVolcanoModal(properties);
+    });
+
+    map.on('click', 'volcanoes-glow', (e) => {
       if (!e.features || !e.features[0]) return;
       const properties = e.features[0].properties;
       showVolcanoModal(properties);
@@ -587,9 +670,47 @@
       map.getCanvas().style.cursor = 'pointer';
     });
 
+    map.on('mouseenter', 'volcanoes-glow', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+
     map.on('mouseleave', 'volcanoes', () => {
       map.getCanvas().style.cursor = '';
     });
+
+    map.on('mouseleave', 'volcanoes-glow', () => {
+      map.getCanvas().style.cursor = '';
+    });
+
+    // Add pulsing animation for active/erupting/unrest volcanoes
+    addVolcanoPulseAnimation();
+  }
+
+  /**
+   * Add pulsing animation for active volcanoes
+   */
+  function addVolcanoPulseAnimation() {
+    let startTime = Date.now();
+
+    function animatePulse() {
+      if (!map || !map.getLayer('volcanoes-glow-outer')) return;
+
+      const elapsed = Date.now() - startTime;
+      const pulse = Math.sin(elapsed / 500) * 0.3 + 0.7; // Oscillate between 0.4 and 1.0
+
+      // Only pulse the outer glow for active/erupting/unrest volcanoes
+      map.setPaintProperty('volcanoes-glow-outer', 'circle-opacity', [
+        'case',
+        ['==', ['get', 'status'], 'erupting'], 0.15 + pulse * 0.15,
+        ['==', ['get', 'status'], 'unrest'], 0.1 + pulse * 0.1,
+        ['==', ['get', 'status'], 'active'], 0.08 + pulse * 0.07,
+        0.05
+      ]);
+
+      requestAnimationFrame(animatePulse);
+    }
+
+    animatePulse();
   }
 
   /**
@@ -911,7 +1032,7 @@
         if (map && filters.showVolcanoes) {
           addVolcanoLayers();
         } else if (map) {
-          const layers = ['volcanoes', 'volcanoes-glow'];
+          const layers = ['volcanoes', 'volcanoes-glow', 'volcanoes-glow-outer'];
           layers.forEach(layer => {
             if (map.getLayer(layer)) {
               map.removeLayer(layer);
