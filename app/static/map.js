@@ -115,15 +115,18 @@
    */
   async function loadMapData(forceRefresh = false) {
     const now = Date.now();
+    console.log('[Map] loadMapData called, forceRefresh:', forceRefresh);
 
     // Use cache if valid and not forced refresh
     if (!forceRefresh && apiCache && (now - apiCacheTime) < CONFIG.apiCacheTTL) {
+      console.log('[Map] Using cached data');
       mapData = apiCache;
       renderMapData();
       return;
     }
 
     showLoading(true);
+    console.log('[Map] Fetching from /api/astrophysics/map');
 
     try {
       const controller = new AbortController();
@@ -134,18 +137,24 @@
         headers: { 'Accept': 'application/json' },
       });
       clearTimeout(timeoutId);
+      console.log('[Map] Response status:', response.status, response.statusText);
 
-      if (!response.ok) throw new Error('Failed to fetch map data');
+      if (!response.ok) throw new Error('Failed to fetch map data: ' + response.status);
 
       mapData = await response.json();
+      console.log('[Map] Data received:', mapData.earthquakes?.length, 'earthquakes,', mapData.volcanoes?.length, 'volcanoes');
       apiCache = mapData;
       apiCacheTime = now;
 
+      console.log('[Map] Calling renderMapData');
       renderMapData();
+      console.log('[Map] renderMapData completed');
       hideLoading();
     } catch (error) {
-      console.error('Map data error:', error.message);
-      showLoadingError('Daten nicht verfügbar');
+      console.error('[Map] Map data error:', error.message);
+      console.error('[Map] Full error:', error);
+      console.error('[Map] Stack trace:', error.stack);
+      showLoadingError('Daten nicht verfügbar: ' + error.message);
       hideLoading();
     }
   }
@@ -217,9 +226,20 @@
 
     // Wait for map to load
     map.on('load', () => {
+      console.log('[Map] Map load event fired');
       enableGlobe();
       loadMapData();
       setupMapEvents();
+    });
+
+    // Handle map errors
+    map.on('error', (e) => {
+      console.error('[Map] Map error:', e.error);
+      showLoadingError('Kartenfehler: ' + (e.error?.message || 'Unbekannter Fehler'));
+    });
+
+    map.on('style.load', () => {
+      console.log('[Map] Style loaded');
     });
 
     // Cleanup on page unload
@@ -256,72 +276,86 @@
    * Render earthquake and volcano markers
    */
   function renderMapData() {
-    if (!map) return;
-
-    // Filter earthquakes
-    const filteredQuakes = mapData.earthquakes.filter(
-      q => q.magnitude >= filters.minMagnitude
-    );
-
-    // Create GeoJSON sources
-    const earthquakeGeoJSON = {
-      type: 'FeatureCollection',
-      features: filteredQuakes.map(q => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [q.longitude, q.latitude] },
-        properties: {
-          magnitude: q.magnitude,
-          depth: q.depth,
-          depth_category: q.depth_category,
-          place: q.place,
-          time: q.time,
-          url: q.url,
-        },
-      })),
-    };
-
-    const volcanoGeoJSON = {
-      type: 'FeatureCollection',
-      features: mapData.volcanoes.map(v => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [v.longitude, v.latitude] },
-        properties: {
-          name: v.name,
-          status: v.status,
-          alert_level: v.alert_level,
-          color_code: v.color_code,
-          synopsis: v.synopsis,
-          url: v.url,
-        },
-      })),
-    };
-
-    // Update or add earthquake source
-    if (map.getSource('earthquakes')) {
-      map.getSource('earthquakes').setData(earthquakeGeoJSON);
-    } else {
-      map.addSource('earthquakes', {
-        type: 'geojson',
-        data: earthquakeGeoJSON,
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
-      });
+    if (!map) {
+      console.warn('renderMapData: map not initialized');
+      return;
     }
 
-    // Update or add volcano source
-    if (map.getSource('volcanoes')) {
-      map.getSource('volcanoes').setData(volcanoGeoJSON);
-    } else {
-      map.addSource('volcanoes', {
-        type: 'geojson',
-        data: volcanoGeoJSON,
-      });
-    }
+    console.log('renderMapData called with', mapData.earthquakes?.length, 'earthquakes and', mapData.volcanoes?.length, 'volcanoes');
 
-    // Add layers only if they don't exist
-    addEarthquakeLayers();
-    addVolcanoLayers();
+    try {
+      // Filter earthquakes
+      const filteredQuakes = (mapData.earthquakes || []).filter(
+        q => q.magnitude >= filters.minMagnitude
+      );
+      console.log('Filtered earthquakes:', filteredQuakes.length);
+
+      // Create GeoJSON sources
+      const earthquakeGeoJSON = {
+        type: 'FeatureCollection',
+        features: filteredQuakes.map(q => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [q.longitude, q.latitude] },
+          properties: {
+            magnitude: q.magnitude,
+            depth: q.depth,
+            depth_category: q.depth_category,
+            place: q.place,
+            time: q.time,
+            url: q.url,
+          },
+        })),
+      };
+
+      const volcanoGeoJSON = {
+        type: 'FeatureCollection',
+        features: (mapData.volcanoes || []).map(v => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [v.longitude, v.latitude] },
+          properties: {
+            name: v.name,
+            status: v.status,
+            alert_level: v.alert_level,
+            color_code: v.color_code,
+            synopsis: v.synopsis,
+            url: v.url,
+          },
+        })),
+      };
+
+      console.log('GeoJSON created:', earthquakeGeoJSON.features.length, 'earthquake features,', volcanoGeoJSON.features.length, 'volcano features');
+
+      // Update or add earthquake source
+      if (map.getSource('earthquakes')) {
+        map.getSource('earthquakes').setData(earthquakeGeoJSON);
+      } else {
+        map.addSource('earthquakes', {
+          type: 'geojson',
+          data: earthquakeGeoJSON,
+          cluster: true,
+          clusterMaxZoom: 14,
+          clusterRadius: 50,
+        });
+      }
+
+      // Update or add volcano source
+      if (map.getSource('volcanoes')) {
+        map.getSource('volcanoes').setData(volcanoGeoJSON);
+      } else {
+        map.addSource('volcanoes', {
+          type: 'geojson',
+          data: volcanoGeoJSON,
+        });
+      }
+
+      // Add layers only if they don't exist
+      addEarthquakeLayers();
+      addVolcanoLayers();
+      console.log('renderMapData completed successfully');
+    } catch (error) {
+      console.error('renderMapData error:', error);
+      throw error;
+    }
   }
 
   /**
