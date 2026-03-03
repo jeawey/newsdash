@@ -59,6 +59,8 @@ class Settings(BaseSettings):
     fast_lane_feeds_per_sector: int = Field(default=24, alias="FAST_LANE_FEEDS_PER_SECTOR")
     fast_lane_min_trusted_domain_weight: float = Field(default=1.1, alias="FAST_LANE_MIN_TRUSTED_DOMAIN_WEIGHT")
 
+    mapbox_token: Optional[str] = Field(default=None, alias="MAPBOX_TOKEN")
+
     def resolved_source_config_path(self) -> Path:
         return Path(self.source_config_path).expanduser().resolve()
 

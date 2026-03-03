@@ -289,6 +289,111 @@ class AstrophysicsData:
 
         return []
 
+    def get_earthquakes_map_data(self, min_magnitude: float = 2.5, days: int = 7) -> list[dict[str, Any]]:
+        """Get earthquakes for map visualization (GeoJSON-like format)."""
+        try:
+            # Use USGS query API for custom date range and magnitude
+            starttime = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+            url = f"https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minmagnitude={min_magnitude}&starttime={starttime}&orderby=time"
+
+            response = httpx.get(url, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+
+            quakes = []
+            for feature in data.get("features", []):
+                props = feature["properties"]
+                coords = feature["geometry"]["coordinates"]
+
+                # Determine color based on depth
+                depth = coords[2] if len(coords) > 2 else 10
+                if depth < 30:
+                    depth_category = "shallow"
+                elif depth < 100:
+                    depth_category = "medium"
+                elif depth < 300:
+                    depth_category = "deep"
+                else:
+                    depth_category = "very_deep"
+
+                quakes.append({
+                    "id": feature.get("id"),
+                    "magnitude": props.get("mag", 0),
+                    "place": props.get("place", "Unknown location"),
+                    "time": props.get("time"),
+                    "updated": props.get("updated"),
+                    "url": props.get("url"),
+                    "depth": depth,
+                    "depth_category": depth_category,
+                    "latitude": coords[1],
+                    "longitude": coords[0],
+                    "mag_type": props.get("magType", "unknown"),
+                    "felt": props.get("felt"),
+                    "tsunami": props.get("tsunami", 0),
+                    "alert": props.get("alert"),
+                })
+
+            return quakes
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch earthquakes for map: {e}")
+
+        return []
+
+    def get_volcanoes_map_data(self) -> list[dict[str, Any]]:
+        """Get active volcanoes with elevated alert status for map visualization."""
+        try:
+            # Fetch from USGS Volcano API - elevated activity endpoints
+            response = httpx.get("https://volcanoes.usgs.gov/vsc/api/volcanoApi/elevated", timeout=10)
+            response.raise_for_status()
+            data = response.json()
+
+            volcanoes = []
+            for volcano in data if isinstance(data, list) else []:
+                # Map USGS alert levels to our categories
+                alert_level = volcano.get("alertLevel", "NORMAL")
+                color_code = volcano.get("colorCode", "GREEN")
+
+                # Determine status category
+                if color_code == "RED" or alert_level == "WARNING":
+                    status = "erupting"
+                elif color_code == "ORANGE" or alert_level == "WATCH":
+                    status = "unrest"
+                elif color_code == "YELLOW" or alert_level == "ADVISORY":
+                    status = "active"
+                else:
+                    status = "dormant"
+
+                volcanoes.append({
+                    "id": volcano.get("vnum"),
+                    "name": volcano.get("vName", "Unknown volcano"),
+                    "latitude": volcano.get("lat"),
+                    "longitude": volcano.get("long"),
+                    "status": status,
+                    "alert_level": alert_level,
+                    "color_code": color_code,
+                    "synopsis": volcano.get("noticeSynopsis", ""),
+                    "threat_level": volcano.get("nvewsThreat", ""),
+                    "updated": volcano.get("sentUtc"),
+                    "url": volcano.get("noticeUrl"),
+                    "volcano_code": volcano.get("volcanoCd"),
+                })
+
+            return volcanoes
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch volcanoes: {e}")
+
+        return []
+
+    def get_all_map_data(self) -> dict[str, Any]:
+        """Get combined earthquake and volcano data for map visualization."""
+        return {
+            "earthquakes": self.get_earthquakes_map_data(min_magnitude=2.5, days=7),
+            "volcanoes": self.get_volcanoes_map_data(),
+            "last_updated": datetime.now().isoformat(),
+        }
+
     def get_stefan_burns_videos(self, limit: int = 4) -> list[dict[str, Any]]:
         """Get latest Stefan Burns YouTube videos."""
         try:

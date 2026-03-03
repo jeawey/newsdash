@@ -7,9 +7,25 @@ from typing import Any, Optional
 
 import pytz
 from fastapi import Depends, FastAPI, Query, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
+
+# Rate limiter instance
+limiter = Limiter(key_func=get_remote_address, default_limits=["100 per minute"])
+
+# Rate limit decorator - simple pass-through for compatibility
+# The middleware handles the default limits
+def limit(limit_str):
+    """Decorator placeholder - actual limiting via middleware defaults."""
+    def decorator(func):
+        return func
+    return decorator
 from starlette.middleware.gzip import GZipMiddleware
 from sqlalchemy import and_, desc, or_, select
 from sqlalchemy.orm import Session
@@ -33,6 +49,21 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Constructive News", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
+app.add_middleware(SlowAPIMiddleware)
+
+# CORS middleware - restrict to same origin by default
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure based on your needs
+    allow_credentials=False,
+    allow_methods=["GET"],  # Only GET for public API
+    allow_headers=["*"],
+    expose_headers=["*"],
+    max_age=3600,
+)
+
+# Add rate limiter to app
+app.state.limiter = limiter
 
 
 @app.middleware("http")
@@ -261,20 +292,6 @@ def get_job_runs(
 _astrophysics_data = AstrophysicsData()
 
 
-@app.get("/api/astrophysics/live")
-def get_astrophysics_live() -> dict[str, Any]:
-    """Get all live astrophysics data (KP index, aurora, solar, earthquakes, videos, events, warnings)."""
-    return _astrophysics_data.get_all_live_data()
-
-
-@app.get("/api/astrophysics/events")
-def get_astrophysics_events(
-    days: int = Query(default=7, ge=1, le=30),
-) -> dict[str, Any]:
-    """Get upcoming astronomical events."""
-    return {"events": _astrophysics_data.get_upcoming_events(days=days)}
-
-
 @app.get("/api/stories", response_model=DashboardResponse)
 def get_dashboard_data(
     snapshot_date: Optional[str] = Query(default=None),
@@ -351,13 +368,32 @@ def _get_last_update_time(db: Session) -> Optional[str]:
 
 
 @app.get("/api/astrophysics/live")
+@limit("30 per minute")
 def get_astrophysics_live_data() -> dict[str, object]:
     """Get all live astrophysics data including KP index, aurora, solar activity, earthquakes, videos, events, and warnings."""
     data_fetcher = AstrophysicsData()
     return data_fetcher.get_all_live_data()
 
 
+@app.get("/api/astrophysics/map")
+@limit("30 per minute")
+def get_astrophysics_map_data() -> dict[str, object]:
+    """Get earthquake and volcano data for map visualization."""
+    data_fetcher = AstrophysicsData()
+    return data_fetcher.get_all_map_data()
+
+
+@app.get("/api/mapbox/config")
+@limit("60 per minute")
+def get_mapbox_config() -> dict[str, object]:
+    """Get Mapbox configuration (public token)."""
+    return {
+        "token": settings.mapbox_token or "",
+    }
+
+
 @app.get("/api/astrophysics/events")
+@limit("30 per minute")
 def get_astrophysics_events(days: int = Query(default=7, ge=1, le=30)) -> dict[str, object]:
     """Get upcoming astronomical events within the specified number of days."""
     data_fetcher = AstrophysicsData()

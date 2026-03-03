@@ -30,6 +30,9 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="{{ assets }}/styles.css" />
+    <!-- Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.css" rel="stylesheet" />
   </head>
   <body>
     <div class="bg-orb orb-a" aria-hidden="true"></div>
@@ -183,8 +186,126 @@
       <section class="panel glass-panel astrophysics-section" id="astrophysics-section">
         <div class="panel-head">
           <h2>Astrophysik Live</h2>
-          <p>Echtzeit-Daten: Geomagnetik, Aurora, Sonnenaktivität, Erdbeben, Planeten</p>
+          <p>Echtzeit-Daten: Geomagnetik, Aurora, Sonnenaktivität, Erdbeben, Vulkane</p>
         </div>
+
+        <!-- Earthquake & Volcano Map -->
+        <div class="map-section" style="margin-bottom: 1rem;">
+          <div class="map-container">
+            <div id="quake-map"></div>
+
+            <!-- Loading Indicator -->
+            <div id="map-loading" class="map-loading" style="display: none;">
+              <div class="map-loading-spinner"></div>
+            </div>
+
+            <!-- Time Selector -->
+            <div class="map-time-selector">
+              <button class="map-time-btn" data-range="1d">24h</button>
+              <button class="map-time-btn is-active" data-range="7d">7d</button>
+              <button class="map-time-btn" data-range="30d">30d</button>
+            </div>
+
+            <!-- Filter Chips -->
+            <div class="map-filters">
+              <button class="map-filter-chip is-active" data-magnitude="2.5">M≥2.5</button>
+              <button class="map-filter-chip" data-magnitude="4.5">M≥4.5</button>
+              <button class="map-filter-chip" data-magnitude="5.5">M≥5.5</button>
+              <button class="map-filter-chip is-active" id="volcano-toggle">Vulkane</button>
+            </div>
+
+            <!-- Zoom Controls -->
+            <div class="map-controls">
+              <button class="map-control-btn" id="map-zoom-in" aria-label="Hineinzoomen">+</button>
+              <button class="map-control-btn" id="map-zoom-out" aria-label="Hinauszoomen">−</button>
+            </div>
+
+            <!-- Legend -->
+            <div class="map-legend">
+              <h4>Legende</h4>
+
+              <div class="legend-section">
+                <div class="legend-title">Magnitude</div>
+                <div class="legend-items">
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-mag-low"></span></span>
+                    <span>M 2.5–4</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-mag-moderate"></span></span>
+                    <span>M 4–5</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-mag-high"></span></span>
+                    <span>M 5–6</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-mag-extreme"></span></span>
+                    <span>M 6+</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="legend-section">
+                <div class="legend-title">Tiefe (Farbe)</div>
+                <div class="legend-items">
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-depth-shallow"></span></span>
+                    <span>0–30 km</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-depth-medium"></span></span>
+                    <span>30–100 km</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-depth-deep"></span></span>
+                    <span>100–300 km</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-dot legend-dot-depth-verydeep"></span></span>
+                    <span>300+ km</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="legend-section">
+                <div class="legend-title">Vulkane</div>
+                <div class="legend-items">
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-volcano legend-volcano-erupting"></span></span>
+                    <span>Eruption</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-volcano legend-volcano-unrest"></span></span>
+                    <span>Unruhe</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-volcano legend-volcano-active"></span></span>
+                    <span>Aktiv</span>
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-marker"><span class="legend-volcano legend-volcano-dormant"></span></span>
+                    <span>Ruhend</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tooltip -->
+            <div id="map-tooltip" class="map-tooltip"></div>
+
+            <!-- Fullscreen Button -->
+            <button class="map-fullscreen-btn" id="fullscreen-toggle">
+              <span>Vollbild</span>
+            </button>
+
+            <!-- Refresh Button -->
+            <button class="map-fullscreen-btn" id="map-refresh" style="bottom: 60px; right: 16px;">
+              <span>Aktualisieren</span>
+            </button>
+          </div>
+        </div>
+
         <div class="astrophysics-grid">
           <!-- KP Index Card -->
           <div class="astro-card kp-card">
@@ -237,13 +358,19 @@
             </div>
           </div>
 
-          <!-- Earthquakes Card -->
+          <!-- Earthquakes Card - Summary with link to map -->
           <div class="astro-card earthquakes-card">
             <div class="astro-header">
-              <h3>Erdbeben (M≥4.5)</h3>
+              <h3>Erdbeben & Vulkane</h3>
             </div>
             <div class="earthquakes-list" id="earthquakes-list">
-              <p class="astro-meta">Laden...</p>
+              <p class="astro-meta" style="text-align: center; padding: 1rem;">
+                <span id="quake-count">--</span> Beben (7d)<br/>
+                <span id="volcano-count">--</span> aktive Vulkane
+              </p>
+              <p class="astro-meta" style="text-align: center; margin-top: 0.5rem;">
+                → Auf der Karte anzeigen
+              </p>
             </div>
           </div>
 
@@ -805,23 +932,23 @@
 
       function updateEarthquakes(quakes) {
         const earthquakesList = document.getElementById("earthquakes-list");
+        const quakeCount = document.getElementById("quake-count");
+        const volcanoCount = document.getElementById("volcano-count");
 
         if (!earthquakesList) return;
 
-        if (!quakes || quakes.length === 0) {
-          earthquakesList.innerHTML = '<p class="astro-meta">Keine Erdbeben in den letzten 24 Stunden</p>';
-          return;
+        // Update count display (from map data)
+        if (quakeCount) {
+          quakeCount.textContent = quakes ? quakes.length : 0;
         }
+      }
 
-        earthquakesList.innerHTML = quakes.map(q => `
-          <div class="quake-item">
-            <span class="quake-magnitude mag-${Math.floor(q.magnitude)}">${q.magnitude.toFixed(1)}</span>
-            <div class="quake-details">
-              <p class="quake-place">${q.place || "Unbekannter Ort"}</p>
-              <p class="quake-meta">${new Date(q.time).toLocaleString("de-DE")} · Tiefe: ${q.depth ? q.depth.toFixed(1) + " km" : "--"}</p>
-            </div>
-          </div>
-        `).join("");
+      function updateVolcanoes(volcanoes) {
+        const volcanoCount = document.getElementById("volcano-count");
+
+        if (volcanoCount) {
+          volcanoCount.textContent = volcanoes ? volcanoes.length : 0;
+        }
       }
 
       function updateEvents(events) {
@@ -876,12 +1003,23 @@
         updateSolar(data.solar || {});
         updateWarnings(data.warnings || []);
         updateEarthquakes(data.earthquakes || []);
+        updateVolcanoes(data.volcanoes || []);
         updateEvents(data.events || []);
         updateVideos(data.videos || []);
 
         if (astroLastUpdate && data.last_updated) {
           astroLastUpdate.textContent = `Zuletzt aktualisiert: ${new Date(data.last_updated).toLocaleString("de-DE")}`;
         }
+      }
+
+      // Load map data separately
+      async function loadMapData() {
+        try {
+          const resp = await fetch("/api/astrophysics/map");
+          if (!resp.ok) return;
+          const data = await resp.json();
+          updateVolcanoes(data.volcanoes || []);
+        } catch (_) {}
       }
 
       async function loadAstrophysicsData() {
@@ -902,5 +1040,8 @@
       // Auto-refresh astrophysics data every 3 minutes
       setInterval(loadAstrophysicsData, 3 * 60 * 1000);
     </script>
+    <script src="{{ assets }}/map.js" defer></script>
+    <!-- Modal Container for Earthquake/Volcano Details -->
+    <div id="quake-modal-container"></div>
   </body>
 </html>
