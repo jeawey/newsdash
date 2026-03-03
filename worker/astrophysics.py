@@ -341,16 +341,57 @@ class AstrophysicsData:
         return []
 
     def get_volcanoes_map_data(self) -> list[dict[str, Any]]:
-        """Get active volcanoes with elevated alert status for map visualization."""
-        try:
-            # Fetch from USGS Volcano API - elevated activity endpoints
-            response = httpx.get("https://volcanoes.usgs.gov/vsc/api/volcanoApi/elevated", timeout=10)
-            response.raise_for_status()
-            data = response.json()
+        """Get worldwide volcanoes with status information for map visualization.
 
-            volcanoes = []
-            for volcano in data if isinstance(data, list) else []:
-                # Map USGS alert levels to our categories
+        Combines:
+        - All worldwide volcanoes from USGS GVP (1470 volcanoes)
+        - US volcano status from USGS VHP (161 US volcanoes with alert levels)
+        """
+        volcanoes = {}  # Use dict to deduplicate by vnum
+
+        # 1. Fetch all worldwide volcanoes from GVP
+        try:
+            response = httpx.get("https://volcanoes.usgs.gov/vsc/api/volcanoApi/volcanoesGVP", timeout=15)
+            response.raise_for_status()
+            gvp_data = response.json()
+
+            for volcano in gvp_data if isinstance(gvp_data, list) else []:
+                vnum = str(volcano.get("vnum", ""))
+                if not vnum:
+                    continue
+
+                volcanoes[vnum] = {
+                    "id": vnum,
+                    "name": volcano.get("vName", "Unknown volcano"),
+                    "latitude": volcano.get("latitude"),
+                    "longitude": volcano.get("longitude"),
+                    "elevation": volcano.get("elevation_m"),
+                    "country": volcano.get("country", ""),
+                    "region": volcano.get("subregion", ""),
+                    "status": "dormant",  # Default status
+                    "alert_level": "NORMAL",
+                    "color_code": "GREEN",
+                    "observatory": volcano.get("obsAbbr", "OTHER"),
+                    "url": volcano.get("webpage", f"https://volcano.si.edu/volcano.cfm?vn={vnum}"),
+                }
+
+            logger.info(f"Loaded {len(volcanoes)} worldwide volcanoes from GVP")
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch GVP volcanoes: {e}")
+
+        # 2. Fetch US volcano status from VHP
+        try:
+            response = httpx.get("https://volcanoes.usgs.gov/vsc/api/volcanoApi/vhpstatus", timeout=10)
+            response.raise_for_status()
+            vhp_data = response.json()
+
+            us_volcano_count = 0
+            for volcano in vhp_data if isinstance(vhp_data, list) else []:
+                vnum = str(volcano.get("vnum", ""))
+                if not vnum:
+                    continue
+
                 alert_level = volcano.get("alertLevel", "NORMAL")
                 color_code = volcano.get("colorCode", "GREEN")
 
@@ -364,27 +405,61 @@ class AstrophysicsData:
                 else:
                     status = "dormant"
 
-                volcanoes.append({
-                    "id": volcano.get("vnum"),
-                    "name": volcano.get("vName", "Unknown volcano"),
-                    "latitude": volcano.get("lat"),
-                    "longitude": volcano.get("long"),
-                    "status": status,
-                    "alert_level": alert_level,
-                    "color_code": color_code,
-                    "synopsis": volcano.get("noticeSynopsis", ""),
-                    "threat_level": volcano.get("nvewsThreat", ""),
-                    "updated": volcano.get("sentUtc"),
-                    "url": volcano.get("noticeUrl"),
-                    "volcano_code": volcano.get("volcanoCd"),
-                })
+                # Update or add volcano with status info
+                if vnum in volcanoes:
+                    volcanoes[vnum].update({
+                        "status": status,
+                        "alert_level": alert_level,
+                        "color_code": color_code,
+                        "synopsis": volcano.get("noticeSynopsis", ""),
+                        "threat_level": volcano.get("nvewsThreat", ""),
+                        "updated": volcano.get("sentUtc"),
+                    })
+                else:
+                    volcanoes[vnum] = {
+                        "id": vnum,
+                        "name": volcano.get("vName", "Unknown volcano"),
+                        "latitude": volcano.get("lat"),
+                        "longitude": volcano.get("long"),
+                        "status": status,
+                        "alert_level": alert_level,
+                        "color_code": color_code,
+                        "synopsis": volcano.get("noticeSynopsis", ""),
+                        "threat_level": volcano.get("nvewsThreat", ""),
+                        "observatory": volcano.get("obs", "USGS"),
+                        "updated": volcano.get("sentUtc"),
+                        "url": volcano.get("vUrl", f"https://volcano.si.edu/volcano.cfm?vn={vnum}"),
+                    }
+                us_volcano_count += 1
 
-            return volcanoes
+            logger.info(f"Updated {us_volcano_count} US volcanoes with status from VHP")
 
         except Exception as e:
-            logger.warning(f"Failed to fetch volcanoes: {e}")
+            logger.warning(f"Failed to fetch VHP status: {e}")
 
-        return []
+        # 3. Mark currently erupting volcanoes from Smithsonian current eruptions
+        try:
+            response = httpx.get("https://volcano.si.edu/gvp_currenteruptions.cfm", timeout=10, follow_redirects=True)
+            if response.status_code == 200:
+                import re
+                # Extract volcano numbers from the page
+                erupting_vnums = set(re.findall(r'vn=(\d+)', response.text))
+
+                for vnum in erupting_vnums:
+                    if vnum in volcanoes:
+                        # Upgrade to erupting if not already higher status
+                        if volcanoes[vnum]["status"] == "dormant":
+                            volcanoes[vnum]["status"] = "active"
+                        if volcanoes[vnum]["color_code"] == "GREEN":
+                            volcanoes[vnum]["color_code"] = "YELLOW"
+                            volcanoes[vnum]["alert_level"] = "ADVISORY"
+
+                logger.info(f"Found {len(erupting_vnums)} currently erupting volcanoes from Smithsonian")
+
+        except Exception as e:
+            logger.warning(f"Failed to fetch Smithsonian current eruptions: {e}")
+
+        return list(volcanoes.values())
 
     def get_all_map_data(self, days: int = 7) -> dict[str, Any]:
         """Get combined earthquake and volcano data for map visualization."""
