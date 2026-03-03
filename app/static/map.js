@@ -409,7 +409,7 @@
       filter: ['!', ['has', 'point_count']],
       layout: {
         'text-field': ['to-string', ['get', 'magnitude']],
-        'text-font': ['Sora Bold'],
+        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
         'text-size': 10,
         'text-allow-overlap': false,
       },
@@ -454,7 +454,7 @@
       filter: ['has', 'point_count'],
       layout: {
         'text-field': ['to-string', ['get', 'point_count_abbreviated']],
-        'text-font': ['Sora Bold'],
+        'text-font': ['DIN Offc Pro Bold', 'Arial Unicode MS Bold'],
         'text-size': 11,
       },
       paint: {
@@ -532,28 +532,6 @@
         'circle-opacity': 0.9,
         'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff',
-      },
-    });
-
-    // Add triangle symbol for volcanoes (alternative approach)
-    map.addLayer({
-      id: 'volcanoes-triangle',
-      type: 'symbol',
-      source: 'volcanoes',
-      layout: {
-        'icon-image': 'triangle-15',
-        'icon-size': 0.8,
-        'icon-rotate': 0,
-        'icon-allow-overlap': true,
-      },
-      paint: {
-        'icon-color': [
-          'case',
-          ['==', ['get', 'status'], 'erupting'], VOLCANO_COLORS.erupting,
-          ['==', ['get', 'status'], 'unrest'], VOLCANO_COLORS.unrest,
-          ['==', ['get', 'status'], 'active'], VOLCANO_COLORS.active,
-          VOLCANO_COLORS.dormant
-        ],
       },
     });
 
@@ -891,7 +869,7 @@
         if (map && filters.showVolcanoes) {
           addVolcanoLayers();
         } else if (map) {
-          const layers = ['volcanoes', 'volcanoes-triangle'];
+          const layers = ['volcanoes'];
           layers.forEach(layer => {
             if (map.getLayer(layer)) {
               map.removeLayer(layer);
