@@ -883,26 +883,6 @@
       });
     }
 
-    // Fullscreen toggle
-    const fullscreenBtn = document.getElementById('fullscreen-toggle');
-    if (fullscreenBtn) {
-      fullscreenBtn.addEventListener('click', () => {
-        const mapContainer = document.querySelector('.map-container');
-        if (mapContainer) {
-          mapContainer.classList.toggle('is-fullscreen');
-          fullscreenBtn.classList.toggle('is-fullscreen');
-          fullscreenBtn.textContent = mapContainer.classList.contains('is-fullscreen')
-            ? 'Vollbild verlassen'
-            : 'Vollbild';
-
-          // Trigger map resize after animation
-          setTimeout(() => {
-            if (map) map.resize();
-          }, 300);
-        }
-      });
-    }
-
     // Refresh button
     const refreshBtn = document.getElementById('map-refresh');
     if (refreshBtn) {

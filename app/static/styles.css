@@ -2208,25 +2208,6 @@ main {
   border-color: var(--accent);
 }
 
-.map-fullscreen-btn.is-fullscreen {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-}
-
-/* Fullscreen Mode */
-.map-container.is-fullscreen {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  border-radius: 0;
-  height: 100vh;
-}
-
-.map-container.is-fullscreen .map-legend {
-  bottom: 80px;
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .map-container {
