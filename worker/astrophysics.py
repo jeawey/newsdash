@@ -386,10 +386,10 @@ class AstrophysicsData:
 
         return []
 
-    def get_all_map_data(self) -> dict[str, Any]:
+    def get_all_map_data(self, days: int = 7) -> dict[str, Any]:
         """Get combined earthquake and volcano data for map visualization."""
         return {
-            "earthquakes": self.get_earthquakes_map_data(min_magnitude=2.5, days=7),
+            "earthquakes": self.get_earthquakes_map_data(min_magnitude=2.5, days=days),
             "volcanoes": self.get_volcanoes_map_data(),
             "last_updated": datetime.now().isoformat(),
         }

@@ -377,10 +377,10 @@ def get_astrophysics_live_data() -> dict[str, object]:
 
 @app.get("/api/astrophysics/map")
 @limit("30 per minute")
-def get_astrophysics_map_data() -> dict[str, object]:
+def get_astrophysics_map_data(days: int = Query(default=7, ge=1, le=30)) -> dict[str, object]:
     """Get earthquake and volcano data for map visualization."""
     data_fetcher = AstrophysicsData()
-    return data_fetcher.get_all_map_data()
+    return data_fetcher.get_all_map_data(days=days)
 
 
 @app.get("/api/mapbox/config")

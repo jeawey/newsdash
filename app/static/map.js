@@ -132,7 +132,11 @@
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      const response = await fetch('/api/astrophysics/map', {
+      // Convert time range to days parameter
+      const daysMap = { '1d': 1, '7d': 7, '30d': 30 };
+      const days = daysMap[filters.timeRange] || 7;
+
+      const response = await fetch(`/api/astrophysics/map?days=${days}`, {
         signal: controller.signal,
         headers: { 'Accept': 'application/json' },
       });
